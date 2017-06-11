@@ -1,0 +1,8 @@
+*/.settings/
+*/.gradle/
+*/.classpath
+*/bin/
+*/build/
+
+*.lnk
+*/backup/
