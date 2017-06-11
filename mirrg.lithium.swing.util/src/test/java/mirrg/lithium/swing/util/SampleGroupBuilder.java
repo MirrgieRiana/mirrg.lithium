@@ -1,6 +1,6 @@
-package mirrg.helium.swing.nitrogen.util;
+package mirrg.lithium.swing.util;
 
-import static mirrg.helium.swing.nitrogen.util.GroupBuilder.*;
+import static mirrg.lithium.swing.util.GroupBuilder.*;
 
 import javax.swing.GroupLayout;
 import javax.swing.JButton;

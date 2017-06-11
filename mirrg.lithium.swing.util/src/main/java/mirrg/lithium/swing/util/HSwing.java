@@ -1,4 +1,4 @@
-package mirrg.helium.swing.nitrogen.util;
+package mirrg.lithium.swing.util;
 
 import java.awt.BorderLayout;
 import java.awt.Component;

@@ -1,4 +1,4 @@
-package mirrg.helium.swing.nitrogen.util;
+package mirrg.lithium.swing.util;
 
 import java.awt.BorderLayout;
 import java.util.Vector;
@@ -9,6 +9,8 @@ import java.util.stream.Stream;
 import javax.swing.JList;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
+
+import mirrg.lithium.swing.util.NamedSlot;
 
 public class SampleNamedSlot
 {

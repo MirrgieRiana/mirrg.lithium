@@ -1,4 +1,4 @@
-package mirrg.helium.swing.nitrogen.util;
+package mirrg.lithium.swing.util;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.swing.JList;
+
+import mirrg.lithium.swing.util.TitledGroup;
 
 public class SampleTitledGroup
 {

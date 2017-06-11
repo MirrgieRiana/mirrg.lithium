@@ -1,4 +1,4 @@
-package mirrg.helium.swing.nitrogen.util;
+package mirrg.lithium.swing.util;
 
 import java.awt.Component;
 import java.awt.Dimension;
