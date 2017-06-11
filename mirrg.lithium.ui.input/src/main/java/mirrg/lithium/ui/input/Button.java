@@ -1,4 +1,4 @@
-package mirrg.helium.standard.hydrogen.input;
+package mirrg.lithium.ui.input;
 
 public class Button implements IButton
 {

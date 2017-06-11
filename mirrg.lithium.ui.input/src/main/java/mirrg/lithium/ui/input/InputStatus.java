@@ -1,4 +1,4 @@
-package mirrg.helium.standard.hydrogen.input;
+package mirrg.lithium.ui.input;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
