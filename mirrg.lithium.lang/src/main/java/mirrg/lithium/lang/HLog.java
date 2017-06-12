@@ -3,6 +3,8 @@ package mirrg.lithium.lang;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -79,6 +81,13 @@ public class HLog
 	public static void log(String format, Object... arguments)
 	{
 		log(String.format(format, arguments));
+	}
+
+	public static String getStackTrace(Exception e)
+	{
+		StringWriter out = new StringWriter();
+		e.printStackTrace(new PrintWriter(out));
+		return out.toString();
 	}
 
 }
