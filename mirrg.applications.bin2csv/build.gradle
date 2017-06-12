@@ -1,0 +1,75 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'maven'
+
+project.group = 'mirrg'
+project.archivesBaseName = 'mirrg.applications.bin2csv'
+version = '0.0.1'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+tasks.withType(AbstractCompile)*.options*.encoding = tasks.withType(GroovyCompile)*.groovyOptions*.encoding = 'UTF-8'
+
+jar {
+	manifest {
+		attributes 'Implementation-Title': 'Gradle Quickstart'
+		attributes 'Implementation-Version': version
+		attributes 'Main-Class': 'mirrg.applications.bin2csv.Main'
+	}
+}
+
+task sourcesJar(type: Jar, dependsOn:classes) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn:javadoc) {
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+
+javadoc {
+	options.charSet = 'UTF-8'
+	options.encoding = 'UTF-8'
+}
+
+artifacts {
+	archives sourcesJar
+	archives javadocJar
+}
+
+repositories {
+
+	mavenCentral()
+
+	maven {
+		url '../maven'
+	}
+
+}
+
+dependencies {
+	//compile group: 'commons-collections', name: 'commons-collections', version: '3.2'
+	testCompile group: 'junit', name: 'junit', version: '4.+'
+	compile group: 'mirrg.lithium', name: 'mirrg.lithium.lang', version: '1.0.1+'
+	compile group: 'mirrg.lithium', name: 'mirrg.lithium.swing.util', version: '1.+'
+}
+
+uploadArchives {
+	repositories {
+
+		flatDir {
+			dirs 'repos'
+		}
+
+		//mavenDeployer {
+		//	pom.artifactId = project.archivesBaseName
+		//	repository(url: 'file://localhost/' + file('../maven').getAbsolutePath())
+		//}
+
+	}
+}
+
+jar {
+	from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+}
