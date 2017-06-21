@@ -159,12 +159,16 @@ public class HPropertiesParser
 		.and(method, Struct2::setY),
 		t -> (pc, c) -> pc.properties.put(t.x, t.y));
 
+	public static Syntax<BiConsumer<PropertiesContext, Consumer<Exception>>> lineComment = pack(regex("#.*"),
+		t -> (pc, c) -> {});
+
 	public static Syntax<BiConsumer<PropertiesContext, Consumer<Exception>>> lineBlank = pack(__,
 		t -> (pc, c) -> {});
 
 	public static Syntax<BiConsumer<PropertiesContext, Consumer<Exception>>> line = or((BiConsumer<PropertiesContext, Consumer<Exception>>) null)
 		.or(lineInherits)
 		.or(lineMethod)
+		.or(lineComment)
 		.or(lineBlank);
 
 }
