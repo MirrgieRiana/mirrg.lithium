@@ -21,6 +21,11 @@ public class Properties
 		methods.put(key, method);
 	}
 
+	public void put(String key, String value)
+	{
+		methods.put(key, p -> value);
+	}
+
 	public Optional<IMethod> getMethod(String key)
 	{
 		IMethod method = methods.get(key);
