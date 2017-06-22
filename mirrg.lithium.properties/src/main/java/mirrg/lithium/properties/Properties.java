@@ -26,6 +26,11 @@ public class Properties
 		methods.put(key, p -> value);
 	}
 
+	public String get(String key)
+	{
+		return getString(key).get();
+	}
+
 	public Optional<IMethod> getMethod(String key)
 	{
 		IMethod method = methods.get(key);
