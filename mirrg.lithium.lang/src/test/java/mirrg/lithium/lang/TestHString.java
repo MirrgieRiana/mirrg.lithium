@@ -156,4 +156,13 @@ public class TestHString
 		assertEquals("5.00000", getEffectiveExpression(5, 5));
 	}
 
+	@Test
+	public void test_fill()
+	{
+		assertEquals("00013", fillLeft('0', "13", 5));
+		assertEquals("13000", fillRight('0', "13", 5));
+		assertEquals("134568", fillLeft('0', "134568", 5));
+		assertEquals("134568", fillRight('0', "134568", 5));
+	}
+
 }

@@ -298,4 +298,16 @@ public class HString
 		}
 	}
 
+	public static String fillLeft(char ch, String string, int length)
+	{
+		if (string.length() >= length) return string;
+		return rept(ch, length - string.length()) + string;
+	}
+
+	public static String fillRight(char ch, String string, int length)
+	{
+		if (string.length() >= length) return string;
+		return string + rept(ch, length - string.length());
+	}
+
 }
