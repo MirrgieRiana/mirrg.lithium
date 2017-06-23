@@ -132,7 +132,9 @@ public class HPropertiesParser
 	private static Syntax<IMethod> methodPlainPart = or((IMethod) null)
 		.or(pack(tunnel((String) null)
 			.and(string("${"))
+			.and(__)
 			.extract(propertyName)
+			.and(__)
 			.and(string("}")),
 			t -> p -> p.getString(t.get()).orElse("")))
 		.or(pack(regex("."),
