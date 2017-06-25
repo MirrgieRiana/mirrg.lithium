@@ -44,10 +44,11 @@ public class BlockWeb extends BlockBase
 
 				String path = e.getRequestURI().getPath();
 				if (path.toString().matches("/api(|/.*)")) {
+					String username = e.getPrincipal() == null ? "Guest" : e.getPrincipal().getUsername();
 
 					if (path.toString().matches("/api/log")) {
 						send(e, String.format(
-							"<link rel='stylesheet' href='/log.css'><div class='username'>" + e.getPrincipal().getUsername() + "</div><table>%s</table>",
+							"<link rel='stylesheet' href='/log.css'><div class='username'>" + username + "</div><table>%s</table>",
 							settings.lineStorage.stream()
 								.map(t -> String.format(
 									"<tr style=\"color: %s;\"><td class='id'>%s</td><td class='time'>[%s]</td><td class='source'><b>%s</b></td><td class='text'>%s</td></tr>",
@@ -67,7 +68,7 @@ public class BlockWeb extends BlockBase
 
 							logger.log("Access: " + e.getRequestURI() + " " + e.getRemoteAddress());
 							try {
-								receiver.onLine(new Line(new LineSource(source.name + "(" + e.getPrincipal().getUsername() + ")", source.color), query));
+								receiver.onLine(new Line(new LineSource(source.name + "(" + username + ")", source.color), query));
 							} catch (Exception e2) {
 								logger.log(e2);
 							}
