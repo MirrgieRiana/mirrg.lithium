@@ -21,7 +21,8 @@ jar {
 task latestJar(type: Copy, dependsOn:jar) {
     from jar.archivePath
     into jar.destinationDir
-    rename "(" + project.archivesBaseName + ")-" + project.version + "(.jar)", '$1$2'
+    rename project.archivesBaseName + "-" + project.version + ".jar", project.archivesBaseName + ".jar"
+    latestJar.metaClass.archivePath = "" + jar.destinationDir + "/" + project.archivesBaseName + ".jar"
 }
 
 task sourcesJar(type: Jar, dependsOn:classes) {
@@ -36,7 +37,7 @@ task javadocJar(type: Jar, dependsOn:javadoc) {
 
 task universalZip(type: Zip, dependsOn:latestJar) {
 	classifier = 'universal'
-	from latestJar
+	from latestJar.archivePath
 	into ("http_home") {
 		from file("http_home")
 	}

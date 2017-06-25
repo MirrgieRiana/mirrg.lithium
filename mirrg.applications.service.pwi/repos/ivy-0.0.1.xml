@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
-  <info organisation="mirrg.lithium" module="mirrg.applications.service.pwi" revision="0.0.1" status="integration" publication="20170625181208">
+  <info organisation="mirrg.lithium" module="mirrg.applications.service.pwi" revision="0.0.1" status="integration" publication="20170625183514">
     <description/>
   </info>
   <configurations>
