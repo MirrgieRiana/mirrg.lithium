@@ -1,0 +1,17 @@
+body {
+	margin: 2px;
+}
+
+table {
+	font-family: monospace;
+	white-space: nowrap;
+	font-size: 12px;
+}
+
+.username {
+	text-align: center;
+}
+
+.id {
+	color: black;
+}
