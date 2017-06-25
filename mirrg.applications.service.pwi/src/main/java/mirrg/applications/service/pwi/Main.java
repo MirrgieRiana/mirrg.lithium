@@ -3,7 +3,6 @@ package mirrg.applications.service.pwi;
 import java.io.File;
 import java.util.ArrayList;
 
-import mirrg.applications.service.pw2.Launcher;
 import mirrg.lithium.properties.HPropertiesParser;
 import mirrg.lithium.properties.Properties;
 

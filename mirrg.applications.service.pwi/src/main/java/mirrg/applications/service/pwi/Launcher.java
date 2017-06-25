@@ -7,8 +7,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.charset.Charset;
@@ -16,193 +14,252 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
-import mirrg.applications.service.pw2.LineStorage;
-import mirrg.applications.service.pw2.Logger;
-import mirrg.applications.service.pwi.core.LineBuffer;
-import mirrg.applications.service.pwi.core.LineSource;
-import mirrg.applications.service.pwi.dispatchers.LineDispatcherInputStream;
-import mirrg.applications.service.pwi.dispatchers.LineDispatcherWebInterface;
-import mirrg.applications.service.pwi.n.Launcher.Runner;
-import mirrg.applications.service.pwi.receivers.LineReceiverService;
+import mirrg.applications.service.pwi.BlockWeb.WebSettings;
 import mirrg.lithium.lang.HString;
 import mirrg.lithium.properties.Properties;
+import mirrg.lithium.struct.Struct1;
 
 public class Launcher
 {
 
-	private Properties properties;
+	public Properties properties;
 
-	private LineBuffer in;
-	private LineBuffer out;
-	private LineStorage lineStorage;
-	private Logger logger;
-
-	public Optional<Runner> oRunner = Optional.empty();
 	public volatile boolean restartable;
+	public int serviceNumber;
+	public String serviceId;
+	public volatile Optional<Session> oSession = Optional.empty();
+
+	public static class Session
+	{
+
+		public int sessionNumber;
+		public String sessionId;
+		public String encoding;
+		public String[] command;
+		public File currentDirectory;
+		public Process process;
+
+	}
+
+	public LineBuffer lineBufferServiceIn;
+	public LineBuffer lineBufferPreSession;
+	public LineBuffer lineBufferServiceOut;
+	public LineStorage lineStorageWeb;
+
+	public Logger logger;
 
 	public Launcher(Properties properties)
 	{
 		this.properties = properties;
-		properties.put("time.id", p -> getTimeId());
-		properties.put("service.number.id", p -> HString.fillLeft('0', p.get("service.number"), 5));
-		properties.put("session.number.id", p -> HString.fillLeft('0', p.get("session.number"), 5));
-
-		in = new LineBuffer();
-		out = new LineBuffer();
-		lineStorage = new LineStorage(properties.getInteger("log.lines").get());
-		logger = new Logger(out, new LineSource("SERVICE", "magenta"));
-
-		restartable = properties.getBoolean("restartable").get();
 	}
 
 	public void run() throws Exception
 	{
 
-		// prepare stdin receiver
+		// プロパティメソッドの設定
+		properties.put("time.id", p -> getTimeId());
+		properties.put("service.number", p -> "" + serviceNumber);
+		properties.put("service.number.id", p -> HString.fillLeft('0', p.get("service.number"), 5));
+		properties.put("service.id", p -> serviceId);
+		properties.put("session.number", p -> oSession.map(s -> "" + s.sessionNumber).orElse("undefined"));
+		properties.put("session.number.id", p -> HString.fillLeft('0', p.get("session.number"), 5));
+		properties.put("session.id", p -> "" + oSession.map(s -> s.sessionId).orElse("undefined"));
+
+		// 各種変数の初期化
+		restartable = properties.getBoolean("restartable").get();
+		serviceNumber = createServiceNumber();
+		serviceId = properties.get("service.id.format");
+		File fileServiceLog = new File(properties.get("file.service.log"));
+
+		////////
+
+		lineBufferServiceIn = new LineBuffer();
+		lineBufferPreSession = new LineBuffer();
+		lineBufferServiceOut = new LineBuffer();
+		lineStorageWeb = new LineStorage(properties.getInteger("log.lines").get());
+
+		logger = new Logger(lineBufferServiceOut, new LineSource("SERVICE", "magenta"));
+
+		Struct1<PrintStream> outServiceLog = new Struct1<>();
+
+		// シャットダウンシグナルか終了時にで子プロセスを殺す
+		Thread currentThread = Thread.currentThread();
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			logger.log("Stopping...");
+			restartable = false;
+			oSession.ifPresent(s -> s.process.destroy());
+			try {
+				currentThread.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}));
+
+		//
+
+		logger.log(properties.get("message.service.start"));
+
+		// 各種スレッド等構築
+		Consumer<Runnable> frame = Runnable::run;
 		{
-			new LineDispatcherInputStream(
-				logger,
+
+			// サービスログの出力ストリーム
+			frame = createFrame(frame, () -> {
+				fileServiceLog.getParentFile().mkdirs();
+				return outServiceLog.x = new PrintStream(new FileOutputStream(fileServiceLog));
+			});
+
+			// 標準入力から読み込んでserviceInに送る
+			frame = createFrame(frame, () -> new BlockBufferedReaderToReceiver(logger,
 				new BufferedReader(new InputStreamReader(System.in)),
 				new LineSource("STDIN", "blue"),
-				new LineReceiverService(logger, this, in, out)).start();
+				lineBufferServiceIn).start(true));
+
+			// webから読み込んでserviceInに送る
 			if (properties.getBoolean("plugin.web").get()) {
-				new LineDispatcherWebInterface(
-					logger,
-					new LineReceiverService(logger, this, in, out),
+				frame = createFrame(frame, () -> new BlockWeb(logger,
+					new WebSettings() {
+						{
+							hostname = properties.get("plugin.web.host");
+							port = properties.getInteger("plugin.web.port").get();
+							backlog = properties.getInteger("plugin.web.backlog").get();
+
+							homeDirectory = properties.get("plugin.web.homeDirectory");
+
+							needAuthentication = properties.getBoolean("plugin.web.needAuthentication").get();
+							basicAuthenticationRegex = properties.get("plugin.web.basicAuthenticationRegex");
+
+							lineStorage = lineStorageWeb;
+						}
+					},
 					new LineSource("WEB", "green"),
-					properties,
-					lineStorage).start();
+					lineBufferServiceIn).start(true));
 			}
-			Thread thread = Thread.currentThread();
-			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-				logger.log("Stopping...");
-				restartable = false;
-				Optional<Runner> oRunner2 = oRunner;
-				if (oRunner2.isPresent()) {
-					Optional<Process> oProcess = oRunner2.get().oProcess;
-					if (oProcess.isPresent()) {
-						oProcess.get().destroy();
-					}
-				}
-				try {
-					thread.join();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}));
-		}
 
-		// サービス名定義
-		int serviceNumber = createServiceNumber();
-		properties.put("service.number", "" + serviceNumber);
-		String serviceId = properties.get("service.id.format");
-		properties.put("service.id", serviceId);
+			// serviceInから読み込んでコマンド解析してpreSessinとserviceOutに送る
+			frame = createFrame(frame, () -> new BlockCommand(logger,
+				lineBufferServiceIn,
+				new LineSource("COMMAND", "orange"),
+				this,
+				lineBufferPreSession,
+				lineBufferServiceOut).start(true));
 
-		// ログファイルの設定
-		File fileServiceLog = new File(properties.get("file.service.log"));
-		fileServiceLog.getParentFile().mkdirs();
-		try (PrintStream out = new PrintStream(new FileOutputStream(fileServiceLog))) {
-
-			// サービス開始
-			log(out, properties.get("message.service.start"));
-
-			// ループ
-			int sessionNumber = 0;
-			do {
-				try {
-					session(sessionNumber, out);
-				} catch (Exception e) {
-					log(out, e);
-				}
-				sessionNumber++;
-			} while (restartable);
+			// serviceOutから読み込んで標準出力とlineStorageWebに送る
+			frame = createFrame(frame, () -> new BlockLineBufferRedirection(logger, lineBufferServiceOut)
+				.addLineConsumer(lineStorageWeb)
+				.addStringConsumer(System.out::println)
+				.addStringConsumer(outServiceLog.x::println)
+				.start(true));
 
 		}
+
+		//////// start ////////
+
+		frame.accept(this::loop);
 
 	}
 
-	private void session(int sessionNumber, PrintStream out) throws Exception
+	private void loop()
+	{
+		int sessionNumber = 0;
+		do {
+
+			try {
+				session(sessionNumber);
+			} catch (Exception e) {
+				logger.log(e);
+			}
+
+			sessionNumber++;
+		} while (restartable);
+	}
+
+	private void session(int sessionNumber) throws Exception
 	{
 
-		// セッション名定義
-		properties.put("session.number", "" + sessionNumber);
-		String sessionId = properties.get("session.id.format");
-		properties.put("session.id", sessionId);
+		// 各種変数の初期化
+		Session session = new Session();
+		session.sessionNumber = sessionNumber;
+		session.sessionId = properties.get("session.id.format");
+		session.encoding = properties.get("encoding");
+		if (session.encoding.isEmpty()) session.encoding = Charset.defaultCharset().name();
 
-		// セッション開始
-		log(out, properties.get("message.session.start"));
+		logger.log(properties.get("message.session.start"));
+
+		////////
 
 		// 実行の設定
-		String[] command = properties.get("command").split(" +");
-		File currentDirectory = new File(properties.get("currentDirectory"));
-		currentDirectory.mkdirs();
+		session.command = properties.get("command").split(" +");
+		session.currentDirectory = new File(properties.get("currentDirectory"));
+		session.currentDirectory.mkdirs();
 
 		// 実行
-		ProcessBuilder processBuilder = new ProcessBuilder(command);
-		processBuilder.directory(currentDirectory);
-		Process process = processBuilder.start();
+		ProcessBuilder processBuilder = new ProcessBuilder(session.command);
+		processBuilder.directory(session.currentDirectory);
+		session.process = processBuilder.start();
 
-		// 入出力
-		String encoding = properties.get("encoding");
-		if (encoding.isEmpty()) encoding = Charset.defaultCharset().name();
-		PrintStream stdin = new PrintStream(process.getOutputStream(), true, encoding);
-		BufferedReader stdout = new BufferedReader(new InputStreamReader(process.getInputStream(), encoding));
-		BufferedReader stderr = new BufferedReader(new InputStreamReader(process.getErrorStream(), encoding));
+		oSession = Optional.of(session);
 
-		new Thread(() -> {
-			while (true) {
-				stdin.println(Math.random());
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					break;
-				}
-			}
-		}).start();
+		// 各種スレッド等構築
+		Consumer<Runnable> frame = Runnable::run;
+		{
 
-		new Thread(() -> {
-			while (true) {
-				try {
-					log(out, stdout.readLine());
-				} catch (IOException e) {
-					break;
-				}
-			}
-		}).start();
+			// preSessionから読み込んで子プロセスの標準入力に送る
+			frame = createFrame(frame, () -> new BlockLineBufferRedirection(logger, lineBufferPreSession)
+				.addRawStringConsumer(new PrintStream(session.process.getOutputStream(), true, session.encoding)::println)
+				.start(true));
 
-		new Thread(() -> {
-			while (true) {
-				try {
-					log(out, stderr.readLine());
-				} catch (IOException e) {
-					break;
-				}
-			}
-		}).start();
+			// 子プロセスの標準出力から読み込んでserviceOutに送る
+			frame = createFrame(frame, () -> new BlockBufferedReaderToReceiver(logger,
+				new BufferedReader(new InputStreamReader(session.process.getInputStream(), session.encoding)),
+				new LineSource("STDOUT", "black"),
+				lineBufferServiceOut).start(true));
 
-		// 終了待機
-		process.waitFor();
+			// 子プロセスの標準エラー出力から読み込んでserviceOutに送る
+			frame = createFrame(frame, () -> new BlockBufferedReaderToReceiver(logger,
+				new BufferedReader(new InputStreamReader(session.process.getErrorStream(), session.encoding)),
+				new LineSource("STDERR", "red"),
+				lineBufferServiceOut).start(true));
 
-	}
-
-	private void log(PrintStream out, String line)
-	{
-		if (!line.isEmpty()) {
-			System.out.println(line);
-			out.println("[STDOUT] " + line);
 		}
+
+		//////// start ////////
+
+		frame.accept(() -> {
+
+			// 終了待機
+			try {
+				session.process.waitFor();
+			} catch (InterruptedException e) {
+
+			}
+
+			oSession = Optional.empty();
+
+		});
+
 	}
 
-	private void log(PrintStream out, Exception e)
+	private Consumer<Runnable> createFrame(Consumer<Runnable> frame, IAutoCloseableSupplier sAutoCloseable)
 	{
-		StringWriter out2 = new StringWriter();
-		e.printStackTrace(new PrintWriter(out));
-		Stream.of(out2.toString().split("\r\n|[\r\n]")).forEach(l -> {
-			System.err.println(l);
-			out.println("[STDERR] " + l);
-		});
+		return y -> {
+			frame.accept(() -> {
+				try (AutoCloseable autoCloseable = sAutoCloseable.get()) {
+					y.run();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			});
+		};
+	}
+
+	private static interface IAutoCloseableSupplier
+	{
+
+		public AutoCloseable get() throws Exception;
+
 	}
 
 	private int createServiceNumber() throws InterruptedException

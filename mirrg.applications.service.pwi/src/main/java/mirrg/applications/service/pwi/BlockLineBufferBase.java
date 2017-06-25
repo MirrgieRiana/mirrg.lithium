@@ -1,4 +1,4 @@
-package mirrg.applications.service.pw2;
+package mirrg.applications.service.pwi;
 
 public abstract class BlockLineBufferBase extends BlockBase
 {
