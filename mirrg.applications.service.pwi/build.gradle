@@ -49,10 +49,6 @@ javadoc {
 	options.encoding = 'UTF-8'
 }
 
-uploadArchives.dependsOn sourcesJar
-uploadArchives.dependsOn javadocJar
-uploadArchives.dependsOn universalZip
-
 artifacts {
 	archives sourcesJar
 	archives javadocJar
