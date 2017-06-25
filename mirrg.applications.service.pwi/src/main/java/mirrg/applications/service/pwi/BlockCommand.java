@@ -48,7 +48,7 @@ public class BlockCommand extends BlockLineBufferBase
 				} else if (line.text.equals("/help")) {
 					serviceOut.onLine(new Line(source, "/set restart true　　　プロセスの再起動を許可します。"));
 					serviceOut.onLine(new Line(source, "/set restart false　　　プロセスの再起動を不許可にします。"));
-					serviceOut.onLine(new Line(source, "/get sessionId　　　現在のプロセスのセッションIDを表示します。"));
+					serviceOut.onLine(new Line(source, "/get [property name]　　　プロパティを表示します。"));
 					serviceOut.onLine(new Line(source, "/exit　　　現在のプロセスを終了し、サービスを終了します。"));
 					serviceOut.onLine(new Line(source, "/stop　　　現在のプロセスを終了し、必要であれば再起動します。"));
 					serviceOut.onLine(new Line(source, "/help　　　このメッセージを表示します。"));
