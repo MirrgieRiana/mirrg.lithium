@@ -7,7 +7,8 @@ public class LineBuffer implements ILineReceiver
 
 	private LinkedList<Line> lines = new LinkedList<>();
 
-	public synchronized void push(Line line)
+	@Override
+	public synchronized void onLine(Line line)
 	{
 		lines.addLast(line);
 		notifyAll();
@@ -18,12 +19,6 @@ public class LineBuffer implements ILineReceiver
 		LinkedList<Line> lines2 = lines;
 		lines = new LinkedList<>();
 		return lines2;
-	}
-
-	@Override
-	public void onLine(Line line)
-	{
-		push(line);
 	}
 
 }

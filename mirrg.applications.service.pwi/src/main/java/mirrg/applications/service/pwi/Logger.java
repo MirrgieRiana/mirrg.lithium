@@ -18,7 +18,7 @@ public class Logger
 
 	public void log(String text)
 	{
-		out.push(new Line(source, text));
+		out.onLine(new Line(source, text));
 	}
 
 	public void log(Exception e)

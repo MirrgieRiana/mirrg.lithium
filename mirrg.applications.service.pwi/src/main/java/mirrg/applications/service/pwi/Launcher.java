@@ -181,6 +181,7 @@ public class Launcher
 
 		// 各種変数の初期化
 		Session session = new Session();
+		oSession = Optional.of(session);
 		session.sessionNumber = sessionNumber;
 		session.sessionId = properties.get("session.id.format");
 		session.encoding = properties.get("encoding");
@@ -199,8 +200,6 @@ public class Launcher
 		ProcessBuilder processBuilder = new ProcessBuilder(session.command);
 		processBuilder.directory(session.currentDirectory);
 		session.process = processBuilder.start();
-
-		oSession = Optional.of(session);
 
 		// 各種スレッド等構築
 		Consumer<Runnable> frame = Runnable::run;
