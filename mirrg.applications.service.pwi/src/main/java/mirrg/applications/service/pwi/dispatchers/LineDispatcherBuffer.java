@@ -1,11 +1,11 @@
 package mirrg.applications.service.pwi.dispatchers;
 
+import mirrg.applications.service.pw2.Logger;
 import mirrg.applications.service.pwi.core.ILineReceiver;
 import mirrg.applications.service.pwi.core.LineBuffer;
 import mirrg.applications.service.pwi.core.LineSource;
-import mirrg.applications.service.pwi.core.Logger;
 
-public class LineDispatcherBuffer extends LineDispatcherThreadBase
+public class LineDispatcherBuffer extends LineDispatcherBase
 {
 
 	private Logger logger;

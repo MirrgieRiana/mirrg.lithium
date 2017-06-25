@@ -1,6 +1,6 @@
 package mirrg.applications.service.pwi.core;
 
-public interface ILineDispatcher
+public interface ILineDispatcher extends AutoCloseable
 {
 
 	public ILineDispatcher start(boolean isDaemon) throws Exception;
@@ -9,7 +9,5 @@ public interface ILineDispatcher
 	{
 		return start(true);
 	}
-
-	public void stop() throws Exception;
 
 }

@@ -4,12 +4,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 
+import mirrg.applications.service.pw2.Logger;
 import mirrg.applications.service.pwi.core.ILineReceiver;
 import mirrg.applications.service.pwi.core.Line;
 import mirrg.applications.service.pwi.core.LineSource;
-import mirrg.applications.service.pwi.core.Logger;
 
-public class LineDispatcherInputStream extends LineDispatcherThreadBase
+public class LineDispatcherInputStream extends LineDispatcherBase
 {
 
 	private Logger logger;
@@ -17,12 +17,12 @@ public class LineDispatcherInputStream extends LineDispatcherThreadBase
 	private LineSource source;
 	private BufferedReader in;
 
-	public LineDispatcherInputStream(Logger logger, ILineReceiver receiver, LineSource source, BufferedReader in)
+	public LineDispatcherInputStream(Logger logger, BufferedReader in, LineSource source, ILineReceiver receiver)
 	{
 		this.logger = logger;
-		this.receiver = receiver;
-		this.source = source;
 		this.in = in;
+		this.source = source;
+		this.receiver = receiver;
 	}
 
 	@Override

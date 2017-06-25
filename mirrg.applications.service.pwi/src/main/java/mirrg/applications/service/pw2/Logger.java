@@ -1,4 +1,4 @@
-package mirrg.applications.service.pwi.core;
+package mirrg.applications.service.pw2;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

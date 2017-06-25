@@ -3,6 +3,7 @@ package mirrg.applications.service.pwi;
 import java.io.File;
 import java.util.ArrayList;
 
+import mirrg.applications.service.pw2.Launcher;
 import mirrg.lithium.properties.HPropertiesParser;
 import mirrg.lithium.properties.Properties;
 
@@ -11,7 +12,8 @@ public class Main
 
 	public static void main(String[] args) throws Exception
 	{
-		new Launcher(parse("default.pwi.properties", args)).start();
+		new Launcher(parse("default.pwi.properties", args)).run();
+		new Thread(() -> System.exit(0)).start();
 	}
 
 	private static Properties parse(String defaultPropertyFileName, String... args) throws Exception
