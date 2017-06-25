@@ -18,6 +18,12 @@ jar {
 	}
 }
 
+task latestJar(type: Copy, dependsOn:jar) {
+    from jar.archivePath
+    into jar.destinationDir
+    rename "(" + project.archivesBaseName + ")-" + project.version + "(.jar)", '$1$2'
+}
+
 task sourcesJar(type: Jar, dependsOn:classes) {
 	classifier = 'sources'
 	from sourceSets.main.allSource
@@ -28,14 +34,28 @@ task javadocJar(type: Jar, dependsOn:javadoc) {
 	from javadoc.destinationDir
 }
 
+task universalZip(type: Zip, dependsOn:latestJar) {
+	classifier = 'universal'
+	from latestJar
+	into ("http_home") {
+		from file("http_home")
+	}
+	from file("default.pwi.properties")
+}
+
 javadoc {
 	options.charSet = 'UTF-8'
 	options.encoding = 'UTF-8'
 }
 
+uploadArchives.dependsOn sourcesJar
+uploadArchives.dependsOn javadocJar
+uploadArchives.dependsOn universalZip
+
 artifacts {
 	archives sourcesJar
 	archives javadocJar
+	archives universalZip
 }
 
 repositories {

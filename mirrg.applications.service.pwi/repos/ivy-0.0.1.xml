@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
-  <info organisation="mirrg.lithium" module="mirrg.applications.service.pwi" revision="0.0.1" status="integration" publication="20170625150347">
+  <info organisation="mirrg.lithium" module="mirrg.applications.service.pwi" revision="0.0.1" status="integration" publication="20170625181208">
     <description/>
   </info>
   <configurations>
@@ -15,6 +15,7 @@
     <artifact name="mirrg.applications.service.pwi" type="jar" ext="jar" conf="archives,runtime"/>
     <artifact name="mirrg.applications.service.pwi" type="jar" ext="jar" conf="archives" m:classifier="sources"/>
     <artifact name="mirrg.applications.service.pwi" type="jar" ext="jar" conf="archives" m:classifier="javadoc"/>
+    <artifact name="mirrg.applications.service.pwi" type="zip" ext="zip" conf="archives" m:classifier="universal"/>
   </publications>
   <dependencies>
     <dependency org="mirrg.lithium" name="mirrg.lithium.properties" rev="1.0.3+" conf="compile-&gt;default"/>
