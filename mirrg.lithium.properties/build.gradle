@@ -4,7 +4,7 @@ apply plugin: 'maven'
 
 project.group = 'mirrg.lithium'
 project.archivesBaseName = 'mirrg.lithium.properties'
-version = '2.0.0'
+version = '2.0.1'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8

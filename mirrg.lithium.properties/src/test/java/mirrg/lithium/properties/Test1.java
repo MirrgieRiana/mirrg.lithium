@@ -42,7 +42,7 @@ public class Test1
 		int[] count = new int[1];
 		Properties properties = HPropertiesParser.parse(new File("test_exception.properties"), e -> {
 			if (e instanceof SyntaxException) {
-				assertEquals("Syntax error at test_exception.properties (R:2 C:3)\nasd\n   ^", e.getMessage());
+				assertEquals("Syntax error at test_exception.properties (R:2 C:4)\nasd\n   ^", e.getMessage());
 			} else {
 				fail();
 			}

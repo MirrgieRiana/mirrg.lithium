@@ -25,7 +25,7 @@ public class SyntaxException extends Exception
 		return String.format("Syntax error at %s (R:%s C:%s)\n%s\n%s^",
 			sourceName,
 			lineNumber,
-			result.getTokenProposalIndex(),
+			result.getTokenProposalIndex() + 1,
 			line,
 			HString.rept(" ", result.getTokenProposalIndex()));
 	}
