@@ -126,7 +126,7 @@ public class Launcher
 							port = properties.getInteger("plugin.web.port").get();
 							backlog = properties.getInteger("plugin.web.backlog").get();
 
-							homeDirectory = properties.get("plugin.web.homeDirectory");
+							homeDirectory = properties.get("plugin.web.homeDirectory").split(";");
 
 							needAuthentication = properties.getBoolean("plugin.web.needAuthentication").get();
 							basicAuthenticationRegex = properties.get("plugin.web.basicAuthenticationRegex");

@@ -82,7 +82,13 @@ public class BlockWeb extends BlockBase
 				} else if (path.toString().matches("/")) {
 					redirect(e, "/index.html");
 				} else if (!path.contains("/..")) {
-					sendFile(e, new File(settings.homeDirectory, path).toURI().toURL());
+					for (String dir : settings.homeDirectory) {
+						File file = new File(dir, path);
+						if (file.exists()) {
+							sendFile(e, file.toURI().toURL());
+							break;
+						}
+					}
 				} else {
 					send(e, 404, "404");
 				}
@@ -181,7 +187,7 @@ public class BlockWeb extends BlockBase
 		public int port;
 		public int backlog;
 
-		public String homeDirectory;
+		public String[] homeDirectory;
 
 		public boolean needAuthentication;
 		public String basicAuthenticationRegex;
