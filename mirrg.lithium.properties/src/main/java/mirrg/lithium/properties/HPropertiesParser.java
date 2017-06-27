@@ -14,7 +14,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import mirrg.lithium.parser.core.Node;
+import mirrg.lithium.parser.core.ResultOxygen;
 import mirrg.lithium.parser.core.Syntax;
 import mirrg.lithium.struct.Struct2;
 
@@ -23,45 +23,45 @@ public class HPropertiesParser
 
 	public static Properties parse(File file, Consumer<Exception> onException) throws FileNotFoundException
 	{
-		return parse(new FileInputStream(file), file.getParentFile(), onException);
+		return parse(new FileInputStream(file), file.getParentFile(), file.getName(), onException);
 	}
 
-	public static Properties parse(InputStream in, File currentDirectory, Consumer<Exception> onException)
+	public static Properties parse(InputStream in, File currentDirectory, String sourceName, Consumer<Exception> onException)
 	{
-		return parse(new BufferedReader(new InputStreamReader(in)), currentDirectory, onException);
+		return parse(new BufferedReader(new InputStreamReader(in)), currentDirectory, sourceName, onException);
 	}
 
-	public static Properties parse(BufferedReader in, File currentDirectory, Consumer<Exception> onException)
+	public static Properties parse(BufferedReader in, File currentDirectory, String sourceName, Consumer<Exception> onException)
 	{
-		return parse(in.lines(), currentDirectory, onException);
+		return parse(in.lines(), currentDirectory, sourceName, onException);
 	}
 
-	public static Properties parse(Stream<String> lines, File currentDirectory, Consumer<Exception> onException)
+	public static Properties parse(Stream<String> lines, File currentDirectory, String sourceName, Consumer<Exception> onException)
 	{
-		return parse(lines.toArray(String[]::new), currentDirectory, onException);
+		return parse(lines.toArray(String[]::new), currentDirectory, sourceName, onException);
 	}
 
-	public static Properties parse(Collection<String> lines, File currentDirectory, Consumer<Exception> onException)
+	public static Properties parse(Collection<String> lines, File currentDirectory, String sourceName, Consumer<Exception> onException)
 	{
-		return parse(lines.stream(), currentDirectory, onException);
+		return parse(lines.stream(), currentDirectory, sourceName, onException);
 	}
 
-	public static Properties parse(String string, File currentDirectory, Consumer<Exception> onException)
+	public static Properties parse(String string, File currentDirectory, String sourceName, Consumer<Exception> onException)
 	{
-		return parse(string.split("\r\n?|\n"), currentDirectory, onException);
+		return parse(string.split("\r\n?|\n"), currentDirectory, sourceName, onException);
 	}
 
-	public static Properties parse(String[] lines, File currentDirectory, Consumer<Exception> onException)
+	public static Properties parse(String[] lines, File currentDirectory, String sourceName, Consumer<Exception> onException)
 	{
 		Properties properties = new Properties();
 		PropertiesContext propertiesContext = new PropertiesContext(properties, currentDirectory);
 
-		for (String line2 : lines) {
-			Node<BiConsumer<PropertiesContext, Consumer<Exception>>> node = line.parse(line2);
-			if (node == null) {
-				onException.accept(new NumberFormatException(line2));
+		for (int i = 0; i < lines.length; i++) {
+			ResultOxygen<BiConsumer<PropertiesContext, Consumer<Exception>>> result = line.matches(lines[i]);
+			if (result.isValid) {
+				result.node.value.accept(propertiesContext, onException::accept);
 			} else {
-				node.value.accept(propertiesContext, onException::accept);
+				onException.accept(new SyntaxException(sourceName, lines[i], i + 1, result));
 			}
 		}
 
@@ -76,14 +76,8 @@ public class HPropertiesParser
 
 	public static Syntax<String> inheritance = regex(".*");
 
-	public static Syntax<BiConsumer<PropertiesContext, Consumer<Exception>>> lineInherits = pack(tunnel((String) null)
-		.and(__)
-		.and(string("@inherit"))
-		.and(__)
-		.and(string(":"))
-		.and(__)
-		.extract(inheritance),
-		t -> (pc, c) -> {
+	public static Syntax<BiConsumer<PropertiesContext, Consumer<Exception>>> lineInherits = pack(tunnel((String) null).and(__).and(string("@inherit")).and(__).and(string(":")).and(__).extract(
+		inheritance), t -> (pc, c) -> {
 			Properties child;
 			try {
 				child = parse(new File(pc.currentDirectory, t.get()), c);
