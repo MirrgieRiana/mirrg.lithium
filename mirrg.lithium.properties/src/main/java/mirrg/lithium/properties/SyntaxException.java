@@ -1,33 +1,28 @@
 package mirrg.lithium.properties;
 
 import mirrg.lithium.lang.HString;
-import mirrg.lithium.parser.core.ResultOxygen;
 
 public class SyntaxException extends Exception
 {
 
-	private String sourceName;
-	private String line;
-	private int lineNumber;
-	private ResultOxygen<?> result;
+	private VM vm;
+	private int column;
 
-	public SyntaxException(String sourceName, String line, int lineNumber, ResultOxygen<?> result)
+	public SyntaxException(VM vm, int column)
 	{
-		this.sourceName = sourceName;
-		this.line = line;
-		this.lineNumber = lineNumber;
-		this.result = result;
+		this.vm = vm;
+		this.column = column;
 	}
 
 	@Override
 	public String getMessage()
 	{
 		return String.format("Syntax error at %s (R:%s C:%s)\n%s\n%s^",
-			sourceName,
-			lineNumber,
-			result.getTokenProposalIndex() + 1,
-			line,
-			HString.rept(" ", result.getTokenProposalIndex()));
+			vm.propertiesSource.sourceName,
+			vm.row,
+			column,
+			vm.line,
+			HString.rept(" ", column - 1));
 	}
 
 }

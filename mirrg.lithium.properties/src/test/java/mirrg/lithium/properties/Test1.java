@@ -13,7 +13,8 @@ public class Test1
 	@Test
 	public void test1() throws Exception
 	{
-		Properties properties = HPropertiesParser.parse(new File("test.properties"), System.err::println);
+		File file = new File("test.properties");
+		Properties properties = HPropertiesParser.parse(file, System.err::println);
 		assertEquals("test-5.0.1.jar", properties.getString("archiveName").get());
 		assertEquals(1, (int) properties.getInteger("a").get());
 		assertEquals(2, (int) properties.getInteger("b").get());
@@ -30,6 +31,11 @@ public class Test1
 		assertEquals("\"'\\345", properties.getString("l").get());
 		assertEquals("\"'\\${10}", properties.getString("m").get());
 		assertEquals("\\\\ \\ 345", properties.getString("n").get());
+
+		assertEquals(new File("test.properties").getAbsoluteFile().getPath(), properties.getString("o2").get());
+		assertEquals(new File("test.properties").getAbsoluteFile().getParent(), properties.getString("p2").get());
+		assertEquals(new File("test2.properties").getAbsoluteFile().getPath(), properties.getString("o").get());
+		assertEquals(new File("test2.properties").getAbsoluteFile().getParent(), properties.getString("p").get());
 
 		assertEquals(1.35, properties.getDouble("double").get(), 0.001);
 		assertEquals(true, (boolean) properties.getBoolean("boolean1").get());
