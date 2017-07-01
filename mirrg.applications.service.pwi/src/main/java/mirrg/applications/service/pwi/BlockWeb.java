@@ -13,7 +13,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -242,31 +241,31 @@ public class BlockWeb extends BlockBase
 
 			for (Entry<String, List<String>> entry : httpExchange.getRequestHeaders().entrySet()) {
 				for (String value : entry.getValue()) {
-					processBuilder.environment().put("HTTP_" + entry.getKey().toUpperCase().replaceAll("-", "_"), value);
+					putEnvironment(processBuilder, "HTTP_" + entry.getKey().toUpperCase().replaceAll("-", "_"), value);
 				}
 			}
 
 			{
-				processBuilder.environment().put("CONTENT_LENGTH", "" + buffersIn.stream()
+				putEnvironment(processBuilder, "CONTENT_LENGTH", "" + buffersIn.stream()
 					.mapToInt(t -> t.y)
 					.sum());
-				processBuilder.environment().put("CONTENT_TYPE", httpExchange.getRequestHeaders().getFirst("content-type"));
-				processBuilder.environment().put("GATEWAY_INTERFACE", "CGI/1.1");
-				processBuilder.environment().put("PATH_INFO", ""); // TODO path info
-				processBuilder.environment().put("PATH_TRANSLATED", ""); // TODO path info
-				processBuilder.environment().put("QUERY_STRING", Optional.ofNullable(httpExchange.getRequestURI().getRawQuery()).orElse(""));
-				processBuilder.environment().put("REMOTE_ADDR", httpExchange.getRemoteAddress().getAddress().getHostAddress());
-				processBuilder.environment().put("REMOTE_HOST", httpExchange.getRemoteAddress().getHostName());
-				processBuilder.environment().put("REMOTE_PORT", "" + httpExchange.getRemoteAddress().getPort());
-				processBuilder.environment().put("REQUEST_METHOD", httpExchange.getRequestMethod());
-				processBuilder.environment().put("REQUEST_URI", httpExchange.getRequestURI().getPath());
-				processBuilder.environment().put("DOCUMENT_ROOT", settings.homeDirectory[0]);
-				processBuilder.environment().put("SCRIPT_FILENAME", scriptFile.getAbsolutePath());
-				processBuilder.environment().put("SCRIPT_NAME", httpExchange.getRequestURI().getPath());
-				processBuilder.environment().put("SERVER_NAME", "" + settings.name);
-				processBuilder.environment().put("SERVER_PORT", "" + settings.port);
-				processBuilder.environment().put("SERVER_PROTOCOL", "HTTP/1.1");
-				processBuilder.environment().put("SERVER_SOFTWARE", getServerName() + "/" + getServerVersion());
+				putEnvironment(processBuilder, "CONTENT_TYPE", httpExchange.getRequestHeaders().getFirst("content-type"));
+				putEnvironment(processBuilder, "GATEWAY_INTERFACE", "CGI/1.1");
+				putEnvironment(processBuilder, "PATH_INFO", ""); // TODO path info
+				putEnvironment(processBuilder, "PATH_TRANSLATED", ""); // TODO path info
+				putEnvironment(processBuilder, "QUERY_STRING", httpExchange.getRequestURI().getRawQuery());
+				putEnvironment(processBuilder, "REMOTE_ADDR", httpExchange.getRemoteAddress().getAddress().getHostAddress());
+				putEnvironment(processBuilder, "REMOTE_HOST", httpExchange.getRemoteAddress().getHostName());
+				putEnvironment(processBuilder, "REMOTE_PORT", "" + httpExchange.getRemoteAddress().getPort());
+				putEnvironment(processBuilder, "REQUEST_METHOD", httpExchange.getRequestMethod());
+				putEnvironment(processBuilder, "REQUEST_URI", httpExchange.getRequestURI().getPath());
+				putEnvironment(processBuilder, "DOCUMENT_ROOT", settings.homeDirectory[0]);
+				putEnvironment(processBuilder, "SCRIPT_FILENAME", scriptFile.getAbsolutePath());
+				putEnvironment(processBuilder, "SCRIPT_NAME", httpExchange.getRequestURI().getPath());
+				putEnvironment(processBuilder, "SERVER_NAME", "" + settings.name);
+				putEnvironment(processBuilder, "SERVER_PORT", "" + settings.port);
+				putEnvironment(processBuilder, "SERVER_PROTOCOL", "HTTP/1.1");
+				putEnvironment(processBuilder, "SERVER_SOFTWARE", getServerName() + "/" + getServerVersion());
 			}
 
 			Process process = processBuilder.start();
@@ -413,6 +412,12 @@ public class BlockWeb extends BlockBase
 			logger.log(e);
 		}
 
+	}
+
+	private void putEnvironment(ProcessBuilder processBuilder, String key, String value)
+	{
+		if (value == null) value = "";
+		processBuilder.environment().put(key, value);
 	}
 
 	public String getServerName()
