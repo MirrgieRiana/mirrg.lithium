@@ -112,7 +112,7 @@ public class BlockWeb extends BlockBase
 
 							for (CGISetting cgiSetting : settings.cgiSettings) {
 								if (file.getPath().endsWith(cgiSetting.fileNameSuffix)) {
-									doCGI(e, cgiSetting, file);
+									doCGI(e, cgiSetting, new File(dir), file);
 									return;
 								}
 							}
@@ -216,10 +216,10 @@ public class BlockWeb extends BlockBase
 		}
 	}
 
-	private void doCGI(HttpExchange httpExchange, CGISetting cgiSetting, File scriptFile)
+	private void doCGI(HttpExchange httpExchange, CGISetting cgiSetting, File documentRoot, File scriptFile)
 	{
 		String[] command = Stream.of(cgiSetting.command)
-			.map(s -> s.replace("%s", scriptFile.getPath()))
+			.map(s -> s.replace("%s", scriptFile.getAbsolutePath()))
 			.toArray(String[]::new);
 
 		try {
@@ -259,7 +259,7 @@ public class BlockWeb extends BlockBase
 				putEnvironment(processBuilder, "REMOTE_PORT", "" + httpExchange.getRemoteAddress().getPort());
 				putEnvironment(processBuilder, "REQUEST_METHOD", httpExchange.getRequestMethod());
 				putEnvironment(processBuilder, "REQUEST_URI", httpExchange.getRequestURI().getPath());
-				putEnvironment(processBuilder, "DOCUMENT_ROOT", settings.homeDirectory[0]);
+				putEnvironment(processBuilder, "DOCUMENT_ROOT", documentRoot.getAbsolutePath());
 				putEnvironment(processBuilder, "SCRIPT_FILENAME", scriptFile.getAbsolutePath());
 				putEnvironment(processBuilder, "SCRIPT_NAME", httpExchange.getRequestURI().getPath());
 				putEnvironment(processBuilder, "SERVER_NAME", "" + settings.name);

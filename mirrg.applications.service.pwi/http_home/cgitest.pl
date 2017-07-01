@@ -2,6 +2,7 @@ use utf8;
 use strict;
 use CGI;
 use Encode;
+use Cwd;
 
 my $q = CGI->new();
 
@@ -23,6 +24,7 @@ print encode("utf-8", << "END");
 <h2>Query</h2>
 
 <p>
+	Chdir: @{[ Cwd::getcwd() ]}<br>
 	Method: @{[ $ENV{REQUEST_METHOD} ]}<br>
 	Query: @{[ $ENV{QUERY_STRING} ]}<br>
 	Value: @{[ decode("utf-8", $q->param("value")) ]}
