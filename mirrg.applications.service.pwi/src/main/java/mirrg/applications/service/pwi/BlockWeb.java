@@ -1,19 +1,31 @@
 package mirrg.applications.service.pwi;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.nio.channels.ClosedByInterruptException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.sun.net.httpserver.BasicAuthenticator;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
+import mirrg.applications.service.pwi.BlockWeb.WebSettings.CGISetting;
 import mirrg.lithium.struct.Tuple;
 
 public class BlockWeb extends BlockBase
@@ -38,11 +50,11 @@ public class BlockWeb extends BlockBase
 	{
 
 		// create server
-		HttpServer httpServer = HttpServer.create(new InetSocketAddress(settings.hostname, settings.port), settings.backlog);
+		HttpServer httpServer = HttpServer.create(new InetSocketAddress(settings.host, settings.port), settings.backlog);
 		{
 			HttpContext context = httpServer.createContext("/", e -> {
-
 				String path = e.getRequestURI().getPath();
+
 				if (path.toString().matches("/api(|/.*)")) {
 					String username = e.getPrincipal() == null ? "Guest" : e.getPrincipal().getUsername();
 
@@ -58,9 +70,15 @@ public class BlockWeb extends BlockBase
 									t.y.source.name,
 									t.y.text))
 								.collect(Collectors.joining())));
-					} else if (path.toString().matches("/api/log/count")) {
+						return;
+					}
+
+					if (path.toString().matches("/api/log/count")) {
 						send(e, "" + settings.lineStorage.getCount());
-					} else if (path.toString().matches("/api/send")) {
+						return;
+					}
+
+					if (path.toString().matches("/api/send")) {
 						String query = e.getRequestURI().getQuery();
 						if (query == null) {
 							send(e, 400, "400");
@@ -75,23 +93,42 @@ public class BlockWeb extends BlockBase
 
 							send(e, "Success[" + query + "]");
 						}
-					} else {
-						send(e, 404, "404");
+						return;
 					}
 
-				} else if (path.toString().matches("/")) {
+					send(e, 404, "404");
+					return;
+				}
+
+				if (path.toString().matches("/")) {
 					redirect(e, "/index.html");
-				} else if (!path.contains("/..")) {
+					return;
+				}
+
+				if (!path.contains("/..")) {
+
 					for (String dir : settings.homeDirectory) {
 						File file = new File(dir, path);
 						if (file.exists()) {
+
+							for (CGISetting cgiSetting : settings.cgiSettings) {
+								if (file.getPath().endsWith(cgiSetting.fileNameSuffix)) {
+									doCGI(e, cgiSetting, file);
+									return;
+								}
+							}
+
 							sendFile(e, file.toURI().toURL());
-							break;
+							return;
 						}
 					}
-				} else {
+
 					send(e, 404, "404");
+					return;
 				}
+
+				send(e, 404, "404");
+				return;
 
 			});
 			if (settings.needAuthentication) {
@@ -115,7 +152,7 @@ public class BlockWeb extends BlockBase
 		return new Thread(() -> {
 
 			httpServer.start();
-			logger.log("Web server started on http://" + settings.hostname + ":" + settings.port);
+			logger.log("Web server started on http://" + settings.host + ":" + settings.port);
 
 			while (true) {
 				try {
@@ -128,33 +165,33 @@ public class BlockWeb extends BlockBase
 		}, source.name);
 	}
 
-	private static void redirect(HttpExchange e, String string) throws IOException
+	private static void redirect(HttpExchange httpExchange, String string) throws IOException
 	{
-		e.getResponseHeaders().add("Location", string);
-		e.sendResponseHeaders(301, 0);
-		e.getResponseBody().close();
+		httpExchange.getResponseHeaders().add("Location", string);
+		httpExchange.sendResponseHeaders(301, 0);
+		httpExchange.getResponseBody().close();
 	}
 
-	private static void send(HttpExchange e, String text) throws IOException
+	private static void send(HttpExchange httpExchange, String text) throws IOException
 	{
-		send(e, 200, "text/html", text, "utf-8");
+		send(httpExchange, 200, "text/html", text, "utf-8");
 	}
 
-	private static void send(HttpExchange e, int code, String text) throws IOException
+	private static void send(HttpExchange httpExchange, int code, String text) throws IOException
 	{
-		send(e, code, "text/html", text, "utf-8");
+		send(httpExchange, code, "text/html", text, "utf-8");
 	}
 
-	private static void send(HttpExchange e, int code, String contentType, String text, String charset) throws IOException
+	private static void send(HttpExchange httpExchange, int code, String contentType, String text, String charset) throws IOException
 	{
-		e.getResponseHeaders().add("Content-Type", contentType + "; charset= " + charset);
+		httpExchange.getResponseHeaders().add("Content-Type", contentType + "; charset= " + charset);
 		byte[] bytes = text.getBytes(charset);
-		e.sendResponseHeaders(code, bytes.length);
-		e.getResponseBody().write(bytes);
-		e.getResponseBody().close();
+		httpExchange.sendResponseHeaders(code, bytes.length);
+		httpExchange.getResponseBody().write(bytes);
+		httpExchange.getResponseBody().close();
 	}
 
-	private static void sendFile(HttpExchange e, URL url) throws IOException
+	private static void sendFile(HttpExchange httpExchange, URL url) throws IOException
 	{
 		try {
 			InputStream in = url.openStream();
@@ -168,31 +205,269 @@ public class BlockWeb extends BlockBase
 			}
 			in.close();
 
-			e.sendResponseHeaders(200, buffers.stream()
+			httpExchange.sendResponseHeaders(200, buffers.stream()
 				.mapToInt(t -> t.y)
 				.sum());
 			for (Tuple<byte[], Integer> buffer : buffers) {
-				e.getResponseBody().write(buffer.x, 0, buffer.y);
+				httpExchange.getResponseBody().write(buffer.x, 0, buffer.y);
 			}
-			e.getResponseBody().close();
+			httpExchange.getResponseBody().close();
 		} catch (IOException e2) {
-			send(e, 404, "404");
+			send(httpExchange, 404, "404");
 		}
+	}
+
+	private void doCGI(HttpExchange httpExchange, CGISetting cgiSetting, File scriptFile)
+	{
+		String[] command = Stream.of(cgiSetting.command)
+			.map(s -> s.replace("%s", scriptFile.getPath()))
+			.toArray(String[]::new);
+
+		try {
+
+			ArrayList<Tuple<byte[], Integer>> buffersIn = new ArrayList<>();
+			try (InputStream in = httpExchange.getRequestBody()) {
+				while (true) {
+					byte[] buffer = new byte[4000];
+					int len = in.read(buffer);
+					if (len == -1) break;
+					buffersIn.add(new Tuple<>(buffer, len));
+				}
+			} catch (IOException e) {
+				logger.log(e);
+			}
+
+			ProcessBuilder processBuilder = new ProcessBuilder(command);
+			processBuilder.directory(scriptFile.getAbsoluteFile().getParentFile());
+
+			for (Entry<String, List<String>> entry : httpExchange.getRequestHeaders().entrySet()) {
+				for (String value : entry.getValue()) {
+					processBuilder.environment().put("HTTP_" + entry.getKey().toUpperCase().replaceAll("-", "_"), value);
+				}
+			}
+
+			{
+				processBuilder.environment().put("CONTENT_LENGTH", "" + buffersIn.stream()
+					.mapToInt(t -> t.y)
+					.sum());
+				processBuilder.environment().put("CONTENT_TYPE", httpExchange.getRequestHeaders().getFirst("content-type"));
+				processBuilder.environment().put("GATEWAY_INTERFACE", "CGI/1.1");
+				processBuilder.environment().put("PATH_INFO", ""); // TODO path info
+				processBuilder.environment().put("PATH_TRANSLATED", ""); // TODO path info
+				processBuilder.environment().put("QUERY_STRING", Optional.ofNullable(httpExchange.getRequestURI().getRawQuery()).orElse(""));
+				processBuilder.environment().put("REMOTE_ADDR", httpExchange.getRemoteAddress().getAddress().getHostAddress());
+				processBuilder.environment().put("REMOTE_HOST", httpExchange.getRemoteAddress().getHostName());
+				processBuilder.environment().put("REMOTE_PORT", "" + httpExchange.getRemoteAddress().getPort());
+				processBuilder.environment().put("REQUEST_METHOD", httpExchange.getRequestMethod());
+				processBuilder.environment().put("REQUEST_URI", httpExchange.getRequestURI().getPath());
+				processBuilder.environment().put("DOCUMENT_ROOT", settings.homeDirectory[0]);
+				processBuilder.environment().put("SCRIPT_FILENAME", scriptFile.getAbsolutePath());
+				processBuilder.environment().put("SCRIPT_NAME", httpExchange.getRequestURI().getPath());
+				processBuilder.environment().put("SERVER_NAME", "" + settings.name);
+				processBuilder.environment().put("SERVER_PORT", "" + settings.port);
+				processBuilder.environment().put("SERVER_PROTOCOL", "HTTP/1.1");
+				processBuilder.environment().put("SERVER_SOFTWARE", getServerName() + "/" + getServerVersion());
+			}
+
+			Process process = processBuilder.start();
+
+			Thread threadIn = new Thread(() -> {
+				try (OutputStream out = process.getOutputStream()) {
+					for (Tuple<byte[], Integer> buffer : buffersIn) {
+						out.write(buffer.x, 0, buffer.y);
+					}
+				} catch (ClosedByInterruptException e) {
+
+				} catch (IOException e) {
+					logger.log(e);
+				}
+			});
+			threadIn.start();
+
+			Thread threadOut = new Thread(() -> {
+				try (InputStream in = process.getInputStream();
+					OutputStream out = httpExchange.getResponseBody()) {
+
+					int code = 200;
+
+					// ヘッダ抽出
+					ArrayList<Byte> sb = new ArrayList<>();
+					while (true) {
+						int ch = in.read();
+
+						if (ch == -1) {
+							httpExchange.sendResponseHeaders(200, 0);
+							return;
+						}
+
+						if (ch == '\n' || ch == '\r') {
+							// 改行が来た
+
+							// 次が\rなら読み飛ばし
+							if (ch == '\r') {
+								in.mark(1);
+								if (in.read() != '\n') in.reset();
+							}
+
+							byte[] bytes = new byte[sb.size()];
+							for (int i = 0; i < sb.size(); i++) {
+								bytes[i] = sb.get(i);
+							}
+							String line = new String(bytes);
+
+							if (line.equals("")) {
+								// ヘッダ終了
+								break;
+							}
+
+							Matcher m = Pattern.compile("([^:]*)[ \t]*:[ \t]*(.*)").matcher(line);
+							if (m.matches()) {
+								// ヘッダ行
+
+								httpExchange.getResponseHeaders().add(
+									m.group(1),
+									m.group(2));
+								if (m.group(1).toLowerCase().equals("status")) {
+									// "302 Moved" とか
+									String[] strs = m.group(2).split(" ");
+									if (strs.length >= 1) {
+										try {
+											code = Integer.parseInt(strs[0], 10);
+										} catch (NumberFormatException e) {
+
+										}
+									}
+								}
+							} else {
+								// "HTTP/1.0 302 Moved" とか
+								String[] strs = line.split(" ");
+								if (strs.length >= 2) {
+									try {
+										code = Integer.parseInt(strs[1], 10);
+									} catch (NumberFormatException e) {
+
+									}
+								}
+							}
+
+							sb = new ArrayList<>();
+						} else {
+							// 改行以外が来た
+
+							sb.add((byte) ch);
+						}
+
+					}
+
+					ArrayList<Tuple<byte[], Integer>> buffersOut = new ArrayList<>();
+					while (true) {
+						byte[] buffer = new byte[4000];
+						int len = in.read(buffer);
+						if (len == -1) break;
+						buffersOut.add(new Tuple<>(buffer, len));
+					}
+
+					httpExchange.sendResponseHeaders(code, buffersOut.stream()
+						.mapToInt(t -> t.y)
+						.sum());
+					for (Tuple<byte[], Integer> buffer : buffersOut) {
+						out.write(buffer.x, 0, buffer.y);
+					}
+
+				} catch (ClosedByInterruptException e) {
+
+				} catch (IOException e) {
+					logger.log(e);
+				}
+			});
+			threadOut.start();
+
+			Thread threadErr = new Thread(() -> {
+				try (BufferedReader in = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+					while (true) {
+						try {
+							String line = in.readLine();
+							if (line == null) break;
+							logger.log(line);
+						} catch (IOException e) {
+							logger.log(e);
+							break;
+						}
+					}
+				} catch (ClosedByInterruptException e) {
+
+				} catch (IOException e) {
+					logger.log(e);
+				}
+			});
+			threadErr.start();
+
+			process.waitFor(1, TimeUnit.SECONDS);
+			if (process.isAlive()) process.destroyForcibly();
+
+			threadIn.interrupt();
+			threadOut.interrupt();
+			threadErr.interrupt();
+
+		} catch (Exception e) {
+			logger.log(e);
+		}
+
+	}
+
+	public String getServerName()
+	{
+		return Main.class.getPackage().getName();
+	}
+
+	public String getServerVersion()
+	{
+		return "undefined"; // TODO
 	}
 
 	public static class WebSettings
 	{
 
-		public String hostname;
+		public String host;
+		public String name;
 		public int port;
 		public int backlog;
 
 		public String[] homeDirectory;
+		public CGISetting[] cgiSettings;
 
 		public boolean needAuthentication;
 		public String basicAuthenticationRegex;
 
 		public LineStorage lineStorage;
+
+		public static class CGISetting
+		{
+
+			public String fileNameSuffix;
+			public String[] command;
+
+		}
+
+		protected String[] parseHomeDirectory(String string)
+		{
+			// TODO use parser
+			return string.split(";");
+		}
+
+		protected CGISetting[] parseCgiSettings(String string)
+		{
+			// TODO  use parser
+			if (string.equals("")) return new CGISetting[0];
+			String[] strings = string.split(";");
+			CGISetting[] cgiSettings = new CGISetting[strings.length];
+			for (int i = 0; i < strings.length; i++) {
+				cgiSettings[i] = new CGISetting();
+				cgiSettings[i].fileNameSuffix = strings[i].substring(0, strings[i].indexOf(":"));
+				cgiSettings[i].command = strings[i].substring(strings[i].indexOf(":") + 1).split(" ");
+			}
+			return cgiSettings;
+		}
 
 	}
 

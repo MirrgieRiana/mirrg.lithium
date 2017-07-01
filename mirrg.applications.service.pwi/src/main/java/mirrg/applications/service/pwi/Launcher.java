@@ -122,11 +122,13 @@ public class Launcher
 				frame = createFrame(frame, () -> new BlockWeb(logger,
 					new WebSettings() {
 						{
-							hostname = properties.get("plugin.web.host");
+							host = properties.get("plugin.web.host");
+							name = properties.get("plugin.web.name");
 							port = properties.getInteger("plugin.web.port").get();
 							backlog = properties.getInteger("plugin.web.backlog").get();
 
-							homeDirectory = properties.get("plugin.web.homeDirectory").split(";");
+							homeDirectory = parseHomeDirectory(properties.get("plugin.web.homeDirectory"));
+							cgiSettings = parseCgiSettings(properties.get("plugin.web.cgi"));
 
 							needAuthentication = properties.getBoolean("plugin.web.needAuthentication").get();
 							basicAuthenticationRegex = properties.get("plugin.web.basicAuthenticationRegex");
