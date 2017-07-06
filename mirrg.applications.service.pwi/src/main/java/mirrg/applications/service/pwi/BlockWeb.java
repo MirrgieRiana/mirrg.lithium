@@ -404,9 +404,9 @@ public class BlockWeb extends BlockBase
 			process.waitFor(1, TimeUnit.SECONDS);
 			if (process.isAlive()) process.destroyForcibly();
 
-			threadIn.interrupt();
-			threadOut.interrupt();
-			threadErr.interrupt();
+			threadIn.join();
+			threadOut.join();
+			threadErr.join();
 
 		} catch (Exception e) {
 			logger.log(e);
