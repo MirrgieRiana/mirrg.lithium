@@ -131,6 +131,10 @@ public class Launcher
 							cgiSettings = parseCgiSettings(properties.get("plugin.web.cgi"));
 							indexes = parseIndexes(properties.get("plugin.web.indexes"));
 
+							timeoutMs = properties.getInteger("plugin.web.timeoutMs").get();
+							requestBufferSize = properties.getInteger("plugin.web.requestBufferSize").get();
+							responseBufferSize = properties.getInteger("plugin.web.responseBufferSize").get();
+
 							needAuthentication = properties.getBoolean("plugin.web.needAuthentication").get();
 							basicAuthenticationRegex = properties.get("plugin.web.basicAuthenticationRegex");
 

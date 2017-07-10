@@ -130,9 +130,9 @@ public class BlockWeb extends BlockBase
 									getServerName() + "/" + getServerVersion(),
 									new File(dir),
 									cgiSetting.command,
-									5000,
-									1000000,
-									1000000).doCGI(
+									settings.timeoutMs,
+									settings.requestBufferSize,
+									settings.responseBufferSize).doCGI(
 										e,
 										file,
 										Optional.empty(), // TODO
@@ -269,6 +269,10 @@ public class BlockWeb extends BlockBase
 		public String[] homeDirectory;
 		public CGISetting[] cgiSettings;
 		public String[] indexes;
+
+		public int timeoutMs;
+		public int requestBufferSize;
+		public int responseBufferSize;
 
 		public boolean needAuthentication;
 		public String basicAuthenticationRegex;
