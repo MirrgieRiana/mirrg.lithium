@@ -1,6 +1,6 @@
 package mirrg.lithium.struct;
 
-public class Tuple4<X, Y, Z, W>
+public final class Tuple4<X, Y, Z, W>
 {
 
 	public final X x;

@@ -1,6 +1,6 @@
 package mirrg.lithium.struct;
 
-public class Struct4<X, Y, Z, W>
+public final class Struct4<X, Y, Z, W>
 {
 
 	public X x;

@@ -1,6 +1,6 @@
 package mirrg.lithium.struct;
 
-public class Tuple0
+public final class Tuple0
 {
 
 	@Override

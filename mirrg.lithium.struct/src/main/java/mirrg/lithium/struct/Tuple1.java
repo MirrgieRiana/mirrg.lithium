@@ -1,6 +1,6 @@
 package mirrg.lithium.struct;
 
-public class Tuple1<X>
+public final class Tuple1<X>
 {
 
 	public final X x;

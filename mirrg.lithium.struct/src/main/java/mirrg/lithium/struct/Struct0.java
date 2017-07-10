@@ -1,6 +1,6 @@
 package mirrg.lithium.struct;
 
-public class Struct0
+public final class Struct0
 {
 
 	@Override

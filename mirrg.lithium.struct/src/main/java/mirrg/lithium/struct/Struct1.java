@@ -1,6 +1,6 @@
 package mirrg.lithium.struct;
 
-public class Struct1<X>
+public final class Struct1<X>
 {
 
 	public X x;
