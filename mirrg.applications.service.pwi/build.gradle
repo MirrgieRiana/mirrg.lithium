@@ -69,8 +69,9 @@ dependencies {
 	//compile group: 'commons-collections', name: 'commons-collections', version: '3.2'
 	testCompile group: 'junit', name: 'junit', version: '4.+'
 	compile group: 'mirrg.lithium', name: 'mirrg.lithium.properties', version: '3.+'
-	compile group: 'mirrg.lithium', name: 'mirrg.lithium.struct', version: '1.+'
+	compile group: 'mirrg.lithium', name: 'mirrg.lithium.struct', version: '2.0.0+'
 	compile group: 'mirrg.lithium', name: 'mirrg.lithium.lang', version: '1.0.2+'
+	compile group: 'mirrg.lithium', name: 'mirrg.lithium.cgi', version: '0.0.2'
 }
 
 uploadArchives {

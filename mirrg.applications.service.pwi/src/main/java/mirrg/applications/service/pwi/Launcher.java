@@ -129,6 +129,7 @@ public class Launcher
 
 							homeDirectory = parseHomeDirectory(properties.get("plugin.web.homeDirectory"));
 							cgiSettings = parseCgiSettings(properties.get("plugin.web.cgi"));
+							indexes = parseIndexes(properties.get("plugin.web.indexes"));
 
 							needAuthentication = properties.getBoolean("plugin.web.needAuthentication").get();
 							basicAuthenticationRegex = properties.get("plugin.web.basicAuthenticationRegex");

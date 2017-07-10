@@ -1,23 +1,14 @@
 package mirrg.applications.service.pwi;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URL;
-import java.nio.channels.ClosedByInterruptException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.sun.net.httpserver.BasicAuthenticator;
 import com.sun.net.httpserver.HttpContext;
@@ -25,6 +16,9 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 import mirrg.applications.service.pwi.BlockWeb.WebSettings.CGISetting;
+import mirrg.lithium.cgi.CGISettings;
+import mirrg.lithium.cgi.ILogger;
+import mirrg.lithium.struct.ImmutableArray;
 import mirrg.lithium.struct.Tuple;
 
 public class BlockWeb extends BlockBase
@@ -53,11 +47,18 @@ public class BlockWeb extends BlockBase
 		{
 			HttpContext context = httpServer.createContext("/", e -> {
 				String path = e.getRequestURI().getPath();
+				String username = e.getPrincipal() == null ? "Guest" : e.getPrincipal().getUsername();
 
-				if (path.toString().matches("/api(|/.*)")) {
-					String username = e.getPrincipal() == null ? "Guest" : e.getPrincipal().getUsername();
+				// 異常URLの除去
+				if ((path + "/").indexOf("/../") != -1) {
+					send(e, 403, "403");
+					return;
+				}
 
-					if (path.toString().matches("/api/log")) {
+				// API
+				if ((path + "/").startsWith("/api/")) {
+
+					if (path.equals("/api/log")) {
 						send(e, String.format(
 							"<link rel='stylesheet' href='/log.css'><div class='username'>" + username + "</div><table>%s</table>",
 							settings.lineStorage.stream()
@@ -72,12 +73,12 @@ public class BlockWeb extends BlockBase
 						return;
 					}
 
-					if (path.toString().matches("/api/log/count")) {
+					if (path.equals("/api/log/count")) {
 						send(e, "" + settings.lineStorage.getCount());
 						return;
 					}
 
-					if (path.toString().matches("/api/send")) {
+					if (path.equals("/api/send")) {
 						String query = e.getRequestURI().getQuery();
 						if (query == null) {
 							send(e, 400, "400");
@@ -99,26 +100,16 @@ public class BlockWeb extends BlockBase
 					return;
 				}
 
-				if (path.toString().matches("/")) {
-					redirect(e, "/index.html");
-					return;
-				}
-
-				if (!path.contains("/..")) {
+				// index
+				if (path.endsWith("/")) {
 
 					for (String dir : settings.homeDirectory) {
-						File file = new File(dir, path);
-						if (file.exists()) {
-
-							for (CGISetting cgiSetting : settings.cgiSettings) {
-								if (file.getPath().endsWith(cgiSetting.fileNameSuffix)) {
-									doCGI(e, cgiSetting, new File(dir), file);
-									return;
-								}
+						for (String index : settings.indexes) {
+							File file = new File(dir, path.substring(1) + index);
+							if (file.isFile()) {
+								redirect(e, path + index);
+								return;
 							}
-
-							sendFile(e, file.toURI().toURL());
-							return;
 						}
 					}
 
@@ -126,9 +117,50 @@ public class BlockWeb extends BlockBase
 					return;
 				}
 
+				// CGI/ファイル転送
+				for (String dir : settings.homeDirectory) {
+					File file = new File(dir, path.substring(1));
+					if (file.isFile()) {
+
+						for (CGISetting cgiSetting : settings.cgiSettings) {
+							if (file.getPath().endsWith(cgiSetting.fileNameSuffix)) {
+								new CGISettings(
+									settings.name,
+									settings.port,
+									getServerName() + "/" + getServerVersion(),
+									new File(dir),
+									cgiSetting.command,
+									5000,
+									1000000,
+									1000000).doCGI(
+										e,
+										file,
+										Optional.empty(), // TODO
+										Optional.empty(), // TODO
+										new ILogger() {
+											@Override
+											public void accept(Exception e)
+											{
+												logger.log(e);
+											}
+
+											@Override
+											public void accept(String message)
+											{
+												logger.log(message);
+											}
+										});
+								return;
+							}
+						}
+
+						sendFile(e, file.toURI().toURL());
+						return;
+					}
+				}
+
 				send(e, 404, "404");
 				return;
-
 			});
 			if (settings.needAuthentication) {
 				context.setAuthenticator(new BasicAuthenticator("Controller") {
@@ -216,210 +248,6 @@ public class BlockWeb extends BlockBase
 		}
 	}
 
-	private void doCGI(HttpExchange httpExchange, CGISetting cgiSetting, File documentRoot, File scriptFile)
-	{
-		String[] command = Stream.of(cgiSetting.command)
-			.map(s -> s.replace("%s", scriptFile.getAbsolutePath()))
-			.toArray(String[]::new);
-
-		try {
-
-			ArrayList<Tuple<byte[], Integer>> buffersIn = new ArrayList<>();
-			try (InputStream in = httpExchange.getRequestBody()) {
-				while (true) {
-					byte[] buffer = new byte[4000];
-					int len = in.read(buffer);
-					if (len == -1) break;
-					buffersIn.add(new Tuple<>(buffer, len));
-				}
-			} catch (IOException e) {
-				logger.log(e);
-			}
-
-			ProcessBuilder processBuilder = new ProcessBuilder(command);
-			processBuilder.directory(scriptFile.getAbsoluteFile().getParentFile());
-
-			for (Entry<String, List<String>> entry : httpExchange.getRequestHeaders().entrySet()) {
-				for (String value : entry.getValue()) {
-					putEnvironment(processBuilder, "HTTP_" + entry.getKey().toUpperCase().replaceAll("-", "_"), value);
-				}
-			}
-
-			{
-				putEnvironment(processBuilder, "CONTENT_LENGTH", "" + buffersIn.stream()
-					.mapToInt(t -> t.y)
-					.sum());
-				putEnvironment(processBuilder, "CONTENT_TYPE", httpExchange.getRequestHeaders().getFirst("content-type"));
-				putEnvironment(processBuilder, "GATEWAY_INTERFACE", "CGI/1.1");
-				putEnvironment(processBuilder, "PATH_INFO", ""); // TODO path info
-				putEnvironment(processBuilder, "PATH_TRANSLATED", ""); // TODO path info
-				putEnvironment(processBuilder, "QUERY_STRING", httpExchange.getRequestURI().getRawQuery());
-				putEnvironment(processBuilder, "REMOTE_ADDR", httpExchange.getRemoteAddress().getAddress().getHostAddress());
-				putEnvironment(processBuilder, "REMOTE_HOST", httpExchange.getRemoteAddress().getHostName());
-				putEnvironment(processBuilder, "REMOTE_PORT", "" + httpExchange.getRemoteAddress().getPort());
-				putEnvironment(processBuilder, "REQUEST_METHOD", httpExchange.getRequestMethod());
-				putEnvironment(processBuilder, "REQUEST_URI", httpExchange.getRequestURI().getPath());
-				putEnvironment(processBuilder, "DOCUMENT_ROOT", documentRoot.getAbsolutePath());
-				putEnvironment(processBuilder, "SCRIPT_FILENAME", scriptFile.getAbsolutePath());
-				putEnvironment(processBuilder, "SCRIPT_NAME", httpExchange.getRequestURI().getPath());
-				putEnvironment(processBuilder, "SERVER_NAME", "" + settings.name);
-				putEnvironment(processBuilder, "SERVER_PORT", "" + settings.port);
-				putEnvironment(processBuilder, "SERVER_PROTOCOL", "HTTP/1.1");
-				putEnvironment(processBuilder, "SERVER_SOFTWARE", getServerName() + "/" + getServerVersion());
-			}
-
-			Process process = processBuilder.start();
-
-			Thread threadIn = new Thread(() -> {
-				try (OutputStream out = process.getOutputStream()) {
-					for (Tuple<byte[], Integer> buffer : buffersIn) {
-						out.write(buffer.x, 0, buffer.y);
-					}
-				} catch (ClosedByInterruptException e) {
-
-				} catch (IOException e) {
-					logger.log(e);
-				}
-			});
-			threadIn.start();
-
-			Thread threadOut = new Thread(() -> {
-				try (InputStream in = process.getInputStream();
-					OutputStream out = httpExchange.getResponseBody()) {
-
-					int code = 200;
-
-					// ヘッダ抽出
-					ArrayList<Byte> sb = new ArrayList<>();
-					while (true) {
-						int ch = in.read();
-
-						if (ch == -1) {
-							httpExchange.sendResponseHeaders(200, 0);
-							return;
-						}
-
-						if (ch == '\n' || ch == '\r') {
-							// 改行が来た
-
-							// 次が\rなら読み飛ばし
-							if (ch == '\r') {
-								in.mark(1);
-								if (in.read() != '\n') in.reset();
-							}
-
-							byte[] bytes = new byte[sb.size()];
-							for (int i = 0; i < sb.size(); i++) {
-								bytes[i] = sb.get(i);
-							}
-							String line = new String(bytes);
-
-							if (line.equals("")) {
-								// ヘッダ終了
-								break;
-							}
-
-							Matcher m = Pattern.compile("([^:]*)[ \t]*:[ \t]*(.*)").matcher(line);
-							if (m.matches()) {
-								// ヘッダ行
-
-								httpExchange.getResponseHeaders().add(
-									m.group(1),
-									m.group(2));
-								if (m.group(1).toLowerCase().equals("status")) {
-									// "302 Moved" とか
-									String[] strs = m.group(2).split(" ");
-									if (strs.length >= 1) {
-										try {
-											code = Integer.parseInt(strs[0], 10);
-										} catch (NumberFormatException e) {
-
-										}
-									}
-								}
-							} else {
-								// "HTTP/1.0 302 Moved" とか
-								String[] strs = line.split(" ");
-								if (strs.length >= 2) {
-									try {
-										code = Integer.parseInt(strs[1], 10);
-									} catch (NumberFormatException e) {
-
-									}
-								}
-							}
-
-							sb = new ArrayList<>();
-						} else {
-							// 改行以外が来た
-
-							sb.add((byte) ch);
-						}
-
-					}
-
-					ArrayList<Tuple<byte[], Integer>> buffersOut = new ArrayList<>();
-					while (true) {
-						byte[] buffer = new byte[4000];
-						int len = in.read(buffer);
-						if (len == -1) break;
-						buffersOut.add(new Tuple<>(buffer, len));
-					}
-
-					httpExchange.sendResponseHeaders(code, buffersOut.stream()
-						.mapToInt(t -> t.y)
-						.sum());
-					for (Tuple<byte[], Integer> buffer : buffersOut) {
-						out.write(buffer.x, 0, buffer.y);
-					}
-
-				} catch (ClosedByInterruptException e) {
-
-				} catch (IOException e) {
-					logger.log(e);
-				}
-			});
-			threadOut.start();
-
-			Thread threadErr = new Thread(() -> {
-				try (BufferedReader in = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-					while (true) {
-						try {
-							String line = in.readLine();
-							if (line == null) break;
-							logger.log(line);
-						} catch (IOException e) {
-							logger.log(e);
-							break;
-						}
-					}
-				} catch (ClosedByInterruptException e) {
-
-				} catch (IOException e) {
-					logger.log(e);
-				}
-			});
-			threadErr.start();
-
-			process.waitFor(1, TimeUnit.SECONDS);
-			if (process.isAlive()) process.destroyForcibly();
-
-			threadIn.join();
-			threadOut.join();
-			threadErr.join();
-
-		} catch (Exception e) {
-			logger.log(e);
-		}
-
-	}
-
-	private void putEnvironment(ProcessBuilder processBuilder, String key, String value)
-	{
-		if (value == null) value = "";
-		processBuilder.environment().put(key, value);
-	}
-
 	public String getServerName()
 	{
 		return Main.class.getPackage().getName();
@@ -440,6 +268,7 @@ public class BlockWeb extends BlockBase
 
 		public String[] homeDirectory;
 		public CGISetting[] cgiSettings;
+		public String[] indexes;
 
 		public boolean needAuthentication;
 		public String basicAuthenticationRegex;
@@ -450,7 +279,7 @@ public class BlockWeb extends BlockBase
 		{
 
 			public String fileNameSuffix;
-			public String[] command;
+			public ImmutableArray<String> command;
 
 		}
 
@@ -469,9 +298,16 @@ public class BlockWeb extends BlockBase
 			for (int i = 0; i < strings.length; i++) {
 				cgiSettings[i] = new CGISetting();
 				cgiSettings[i].fileNameSuffix = strings[i].substring(0, strings[i].indexOf(":"));
-				cgiSettings[i].command = strings[i].substring(strings[i].indexOf(":") + 1).split(" ");
+				cgiSettings[i].command = new ImmutableArray<>(strings[i].substring(strings[i].indexOf(":") + 1).split(" "));
 			}
 			return cgiSettings;
+		}
+
+		protected String[] parseIndexes(String string)
+		{
+			// TODO  use parser
+			if (string.equals("")) return new String[0];
+			return string.split(";");
 		}
 
 	}
