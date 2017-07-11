@@ -46,6 +46,10 @@ repositories {
 		url '../maven'
 	}
 
+	//maven {
+	//	url 'https://raw.githubusercontent.com/MirrgieRiana/mirrg.lithium/master/maven'
+	//}
+
 }
 
 dependencies {
