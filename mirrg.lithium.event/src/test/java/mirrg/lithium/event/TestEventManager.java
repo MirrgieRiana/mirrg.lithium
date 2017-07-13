@@ -112,7 +112,7 @@ public class TestEventManager
 		eventManager.post(new Object());
 		assertEquals("AAB", message[0]);
 
-		eventManager.registerRemovable(Object.class, new EventManager.IPredicate<Object>() {
+		eventManager.registerRemovable(Object.class, new Predicate<Object>() {
 
 			private boolean first = true;
 
@@ -197,12 +197,12 @@ public class TestEventManager
 		};
 		ArrayList<Exception> exceptions = new ArrayList<>();
 
-		EventManagerSafe<Object> eventManager = new EventManagerSafe<>();
+		EventManager<Object> eventManager = new EventManager<>();
 
 		eventManager.register(Object.class, event -> {
 			message[0] += "A";
 		});
-		eventManager.register(Object.class, event -> {
+		eventManager.registerThrowable(Object.class, event -> {
 			throw new Exception();
 		});
 		eventManager.register(Object.class, event -> {

@@ -1,6 +1,8 @@
 package mirrg.lithium.event;
 
 import java.util.ArrayList;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * とてもシンプルなイベントマネージャです。
@@ -17,13 +19,25 @@ public class EventManager<T>
 	 *
 	 * @return listenerが返されます。
 	 */
-	public <E extends T, L extends IConsumer<E>> L register(Class<E> clazz, L listener)
+	public <E extends T, R extends Consumer<E>> R register(Class<E> clazz, R listener)
 	{
-		register(clazz, e -> {
+		return registerThrowable(clazz, e -> {
 			listener.accept(e);
 			return true;
 		}, listener);
-		return listener;
+	}
+
+	/**
+	 * 登録した順番に呼び出されます。
+	 *
+	 * @return listenerが返されます。
+	 */
+	public <E extends T, R extends IConsumer<E>> R registerThrowable(Class<E> clazz, R listener)
+	{
+		return registerThrowable(clazz, e -> {
+			listener.accept(e);
+			return true;
+		}, listener);
 	}
 
 	/**
@@ -33,10 +47,21 @@ public class EventManager<T>
 	 *            falseを返した場合、このイベントハンドラは無効となります。
 	 * @return listenerが返されます。
 	 */
-	public <E extends T, L extends IPredicate<E>> L registerRemovable(Class<E> clazz, L listener)
+	public <E extends T, R extends Predicate<E>> R registerRemovable(Class<E> clazz, R listener)
 	{
-		register(clazz, listener, listener);
-		return listener;
+		return registerThrowable(clazz, listener::test, listener);
+	}
+
+	/**
+	 * 登録した順番に呼び出されます。
+	 *
+	 * @param listener
+	 *            falseを返した場合、このイベントハンドラは無効となります。
+	 * @return listenerが返されます。
+	 */
+	public <E extends T, R extends IPredicate<E>> R registerRemovableThrowable(Class<E> clazz, R listener)
+	{
+		return registerThrowable(clazz, listener, listener);
 	}
 
 	/**
@@ -48,7 +73,21 @@ public class EventManager<T>
 	 *            イベントハンドラの削除時に指定するオブジェクトです。
 	 * @return removerが返されます。
 	 */
-	public <E extends T> Object register(Class<E> clazz, IPredicate<E> listener, Object remover)
+	public <E extends T, R> R register(Class<E> clazz, Predicate<E> listener, R remover)
+	{
+		return registerThrowable(clazz, listener::test, remover);
+	}
+
+	/**
+	 * 登録した順番に呼び出されます。
+	 *
+	 * @param listener
+	 *            falseを返した場合、このイベントハンドラは無効となります。
+	 * @param remover
+	 *            イベントハンドラの削除時に指定するオブジェクトです。
+	 * @return removerが返されます。
+	 */
+	public <E extends T, R> R registerThrowable(Class<E> clazz, IPredicate<E> listener, R remover)
 	{
 		classes.add(clazz);
 		listeners.add(listener);
@@ -80,7 +119,43 @@ public class EventManager<T>
 	{
 		for (int i = 0; i < classes.size(); i++) {
 			if (classes.get(i).isInstance(event)) {
-				if (!((IPredicate<E>) listeners.get(i)).test(event)) {
+				boolean flag = true;
+				try {
+					flag = ((IPredicate<E>) listeners.get(i)).test(event);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				if (!flag) {
+					classes.remove(i);
+					listeners.remove(i);
+					removers.remove(i);
+					i--;
+				}
+			}
+		}
+	}
+
+	/**
+	 * 登録時のクラスがこのイベントと代入互換であるハンドラを、
+	 * 登録時の順番に起動します。
+	 *
+	 * @param consumer
+	 *            falseを返した場合、後続のイベントがキャンセルされます。
+	 */
+	@SuppressWarnings("unchecked")
+	public <E extends T> void post(E event, Predicate<Exception> consumer)
+	{
+		for (int i = 0; i < classes.size(); i++) {
+			if (classes.get(i).isInstance(event)) {
+				boolean flag = true;
+				try {
+					flag = ((IPredicate<E>) listeners.get(i)).test(event);
+				} catch (Exception e) {
+					if (!consumer.test(e)) {
+						break;
+					}
+				}
+				if (!flag) {
 					classes.remove(i);
 					listeners.remove(i);
 					removers.remove(i);
@@ -93,14 +168,14 @@ public class EventManager<T>
 	public static interface IConsumer<T>
 	{
 
-		public void accept(T t);
+		public void accept(T t) throws Exception;
 
 	}
 
 	public static interface IPredicate<T>
 	{
 
-		public boolean test(T t);
+		public boolean test(T t) throws Exception;
 
 	}
 
