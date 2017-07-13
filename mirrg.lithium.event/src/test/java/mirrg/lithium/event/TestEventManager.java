@@ -2,6 +2,7 @@ package mirrg.lithium.event;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -111,7 +112,7 @@ public class TestEventManager
 		eventManager.post(new Object());
 		assertEquals("AAB", message[0]);
 
-		eventManager.registerRemovable(Object.class, new Predicate<Object>() {
+		eventManager.registerRemovable(Object.class, new EventManager.IPredicate<Object>() {
 
 			private boolean first = true;
 
@@ -185,6 +186,32 @@ public class TestEventManager
 
 		eventManager.post(new Object());
 		assertEquals("", message[0]);
+
+	}
+
+	@Test
+	public void test6()
+	{
+		String[] message = {
+			"",
+		};
+		ArrayList<Exception> exceptions = new ArrayList<>();
+
+		EventManagerSafe<Object> eventManager = new EventManagerSafe<>();
+
+		eventManager.register(Object.class, event -> {
+			message[0] += "A";
+		});
+		eventManager.register(Object.class, event -> {
+			throw new Exception();
+		});
+		eventManager.register(Object.class, event -> {
+			message[0] += "C";
+		});
+
+		eventManager.post(new Object(), exceptions::add);
+		assertEquals("AC", message[0]);
+		assertEquals(1, exceptions.size());
 
 	}
 

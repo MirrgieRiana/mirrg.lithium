@@ -1,11 +1,13 @@
 package mirrg.lithium.event;
 
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 /**
  * とてもシンプルなイベントマネージャです。
+ * リスナーが例外を出した場合でも後続のリスナーを実行します。
  */
-public class EventManager<T>
+public class EventManagerSafe<T>
 {
 
 	private ArrayList<Class<? extends T>> classes = new ArrayList<>();
@@ -76,11 +78,17 @@ public class EventManager<T>
 	 * 登録時の順番に起動します。
 	 */
 	@SuppressWarnings("unchecked")
-	public <E extends T> void post(E event)
+	public <E extends T> void post(E event, Consumer<Exception> consumer)
 	{
 		for (int i = 0; i < classes.size(); i++) {
 			if (classes.get(i).isInstance(event)) {
-				if (!((IPredicate<E>) listeners.get(i)).test(event)) {
+				boolean flag = true;
+				try {
+					flag = ((IPredicate<E>) listeners.get(i)).test(event);
+				} catch (Exception e) {
+					consumer.accept(e);
+				}
+				if (!flag) {
 					classes.remove(i);
 					listeners.remove(i);
 					removers.remove(i);
@@ -93,14 +101,14 @@ public class EventManager<T>
 	public static interface IConsumer<T>
 	{
 
-		public void accept(T t);
+		public void accept(T t) throws Exception;
 
 	}
 
 	public static interface IPredicate<T>
 	{
 
-		public boolean test(T t);
+		public boolean test(T t) throws Exception;
 
 	}
 
