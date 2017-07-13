@@ -37,6 +37,10 @@ public class Test1
 		assertEquals(new File("test2.properties").getAbsoluteFile().getPath(), properties.getString("o").get());
 		assertEquals(new File("test2.properties").getAbsoluteFile().getParent(), properties.getString("p").get());
 
+		assertEquals("200", properties.getString("r1").get());
+		assertEquals("100", properties.getString("r2").get());
+		assertEquals("100200", properties.getString("s").get());
+
 		assertEquals(1.35, properties.getDouble("double").get(), 0.001);
 		assertEquals(true, (boolean) properties.getBoolean("boolean1").get());
 		assertEquals(false, (boolean) properties.getBoolean("boolean2").get());

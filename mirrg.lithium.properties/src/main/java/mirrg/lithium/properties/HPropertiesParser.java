@@ -125,7 +125,14 @@ public class HPropertiesParser
 					}
 				}))
 			.or(pack(string("@dir"),
-				t -> vm -> p -> vm.propertiesSource.directory.getAbsolutePath())))
+				t -> vm -> p -> vm.propertiesSource.directory.getAbsolutePath()))
+			.or(pack(tunnel((String) null)
+				.and(string("@super"))
+				.and(__)
+				.and(string(":"))
+				.and(__)
+				.extract(propertyName),
+				t -> vm -> p -> p.getStringOfParents(t.get()).orElse(""))))
 		.and(__)
 		.and(string("}")),
 		t -> t.get());

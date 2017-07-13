@@ -42,9 +42,23 @@ public class Properties
 		return Optional.empty();
 	}
 
+	public Optional<IMethod> getMethodOfParents(String key)
+	{
+		for (Properties parent : parents) {
+			Optional<IMethod> oMethod = parent.getMethod(key);
+			if (oMethod.isPresent()) return oMethod;
+		}
+		return Optional.empty();
+	}
+
 	public Optional<String> getString(String key)
 	{
 		return getMethod(key).map(m -> m.apply(this));
+	}
+
+	public Optional<String> getStringOfParents(String key)
+	{
+		return getMethodOfParents(key).map(m -> m.apply(this));
 	}
 
 	private <T> Optional<T> getNumber(String key, Function<String, T> function)
