@@ -21,39 +21,39 @@ import mirrg.lithium.struct.Struct2;
 public class HPropertiesParser
 {
 
-	public static Properties parse(File file, Consumer<Exception> onException) throws FileNotFoundException
+	public static IProperties parse(File file, Consumer<Exception> onException) throws FileNotFoundException
 	{
 		return parse(new FileInputStream(file), new PropertiesSource(file), onException);
 	}
 
-	public static Properties parse(InputStream in, PropertiesSource propertiesSource, Consumer<Exception> onException)
+	public static IProperties parse(InputStream in, PropertiesSource propertiesSource, Consumer<Exception> onException)
 	{
 		return parse(new BufferedReader(new InputStreamReader(in)), propertiesSource, onException);
 	}
 
-	public static Properties parse(BufferedReader in, PropertiesSource propertiesSource, Consumer<Exception> onException)
+	public static IProperties parse(BufferedReader in, PropertiesSource propertiesSource, Consumer<Exception> onException)
 	{
 		return parse(in.lines(), propertiesSource, onException);
 	}
 
-	public static Properties parse(Stream<String> lines, PropertiesSource propertiesSource, Consumer<Exception> onException)
+	public static IProperties parse(Stream<String> lines, PropertiesSource propertiesSource, Consumer<Exception> onException)
 	{
 		return parse(lines.toArray(String[]::new), propertiesSource, onException);
 	}
 
-	public static Properties parse(Collection<String> lines, PropertiesSource propertiesSource, Consumer<Exception> onException)
+	public static IProperties parse(Collection<String> lines, PropertiesSource propertiesSource, Consumer<Exception> onException)
 	{
 		return parse(lines.stream(), propertiesSource, onException);
 	}
 
-	public static Properties parse(String string, PropertiesSource propertiesSource, Consumer<Exception> onException)
+	public static IProperties parse(String string, PropertiesSource propertiesSource, Consumer<Exception> onException)
 	{
 		return parse(string.split("\r\n?|\n"), propertiesSource, onException);
 	}
 
-	public static Properties parse(String[] lines, PropertiesSource propertiesSource, Consumer<Exception> onException)
+	public static IProperties parse(String[] lines, PropertiesSource propertiesSource, Consumer<Exception> onException)
 	{
-		Properties properties = new Properties();
+		PropertiesMultipleInheritable properties = new PropertiesMultipleInheritable();
 
 		for (int i = 0; i < lines.length; i++) {
 			ResultOxygen<Consumer<VM>> result = line.matches(lines[i]);
@@ -84,23 +84,23 @@ public class HPropertiesParser
 		.and(__)
 		.extract(inheritance),
 		t -> vm -> {
-			Properties child;
+			IProperties parent;
 			try {
-				child = parse(new File(vm.propertiesSource.directory, t.get()), vm.onException);
+				parent = parse(new File(vm.propertiesSource.directory, t.get()), vm.onException);
 			} catch (FileNotFoundException e) {
 				vm.onException.accept(e);
 				return;
 			}
-			vm.properties.addParent(child);
+			vm.properties.addParent(parent);
 		});
 
 	private static Syntax<Function<VM, IMethod>> methodStaticPart = or((Function<VM, IMethod>) null)
 		.or(pack(tunnel((String) null)
 			.and(string("\\"))
 			.extract(regex(".")),
-			t -> vm -> p -> t.get()))
+			t -> vm -> p -> new PropertyBasic(t.get())))
 		.or(pack(regex("[^\\']"),
-			t -> vm -> p -> t));
+			t -> vm -> p -> new PropertyBasic(t)));
 
 	private static Syntax<ArrayList<Function<VM, IMethod>>> methodStatic = pack(tunnel(
 		(ArrayList<Function<VM, IMethod>>) null)
@@ -114,25 +114,32 @@ public class HPropertiesParser
 		.and(__)
 		.extract(or((Function<VM, IMethod>) null)
 			.or(pack(propertyName,
-				t -> vm -> p -> p.getString(t).orElse("")))
+				t -> vm -> p -> p.get(t)))
 			.or(packNode(string("@file"),
 				n -> vm -> {
 					if (vm.propertiesSource.oFile.isPresent()) {
-						return p -> vm.propertiesSource.oFile.get().getAbsolutePath();
+						return p -> new PropertyBasic(vm.propertiesSource.oFile.get().getAbsolutePath());
 					} else {
 						vm.onException.accept(new IllegalConstantAccessSyntaxException(vm, n.begin + 1));
-						return p -> "";
+						return p -> new PropertyBasic("");
 					}
 				}))
 			.or(pack(string("@dir"),
-				t -> vm -> p -> vm.propertiesSource.directory.getAbsolutePath()))
+				t -> vm -> p -> new PropertyBasic(vm.propertiesSource.directory.getAbsolutePath())))
 			.or(pack(tunnel((String) null)
-				.and(string("@super"))
+				.and(string("@parent"))
 				.and(__)
 				.and(string(":"))
 				.and(__)
 				.extract(propertyName),
-				t -> vm -> p -> p.getStringOfParents(t.get()).orElse(""))))
+				t -> vm -> p -> vm.properties.getOfParents(t.get())))
+			.or(pack(tunnel((String) null)
+				.and(string("@current"))
+				.and(__)
+				.and(string(":"))
+				.and(__)
+				.extract(propertyName),
+				t -> vm -> p -> vm.properties.get(t.get()))))
 		.and(__)
 		.and(string("}")),
 		t -> t.get());
@@ -141,10 +148,10 @@ public class HPropertiesParser
 		.or(pack(tunnel((String) null)
 			.and(string("\\"))
 			.extract(regex(".")),
-			t -> vm -> p -> t.get()))
+			t -> vm -> p -> new PropertyBasic(t.get())))
 		.or(methodPartConstant)
 		.or(pack(regex("[^\\\"]"),
-			t -> vm -> p -> t));
+			t -> vm -> p -> new PropertyBasic(t)));
 
 	private static Syntax<ArrayList<Function<VM, IMethod>>> methodDynamic = pack(tunnel(
 		(ArrayList<Function<VM, IMethod>>) null)
@@ -156,7 +163,7 @@ public class HPropertiesParser
 	private static Syntax<Function<VM, IMethod>> methodPlainPart = or((Function<VM, IMethod>) null)
 		.or(methodPartConstant)
 		.or(pack(regex("."),
-			t -> vm -> p -> t));
+			t -> vm -> p -> new PropertyBasic(t)));
 
 	private static Syntax<ArrayList<Function<VM, IMethod>>> methodPlain = repeat(methodPlainPart);
 
@@ -170,7 +177,7 @@ public class HPropertiesParser
 			return p -> {
 				StringBuilder sb = new StringBuilder();
 				t2.forEach(m -> sb.append(m.apply(p)));
-				return sb.toString();
+				return new PropertyBasic(sb.toString());
 			};
 		});
 

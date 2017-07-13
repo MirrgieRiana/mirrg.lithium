@@ -3,6 +3,6 @@ package mirrg.lithium.properties;
 public interface IMethod
 {
 
-	public String apply(Properties terminal);
+	public IProperty apply(IProperties terminal);
 
 }

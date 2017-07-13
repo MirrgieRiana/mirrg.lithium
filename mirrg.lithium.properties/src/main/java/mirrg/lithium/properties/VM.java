@@ -7,14 +7,14 @@ import mirrg.lithium.parser.core.ResultOxygen;
 public class VM
 {
 
-	public Properties properties;
+	public PropertiesMultipleInheritable properties;
 	public PropertiesSource propertiesSource;
 	public Consumer<Exception> onException;
 	public String line;
 	public int row;
 	public ResultOxygen<Consumer<VM>> result;
 
-	public VM(Properties properties, PropertiesSource propertiesSource, Consumer<Exception> onException, String line, int row, ResultOxygen<Consumer<VM>> result)
+	public VM(PropertiesMultipleInheritable properties, PropertiesSource propertiesSource, Consumer<Exception> onException, String line, int row, ResultOxygen<Consumer<VM>> result)
 	{
 		this.properties = properties;
 		this.propertiesSource = propertiesSource;

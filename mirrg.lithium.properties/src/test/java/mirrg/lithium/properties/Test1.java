@@ -14,43 +14,45 @@ public class Test1
 	public void test1() throws Exception
 	{
 		File file = new File("test.properties");
-		Properties properties = HPropertiesParser.parse(file, System.err::println);
-		assertEquals("test-5.0.1.jar", properties.getString("archiveName").get());
-		assertEquals(1, (int) properties.getInteger("a").get());
-		assertEquals(2, (int) properties.getInteger("b").get());
-		assertEquals("3", properties.getString("c").get());
-		assertEquals(4, (int) properties.getInteger("d.e").get());
-		assertEquals(5, (int) properties.getInteger("f/g").get());
-		assertEquals("", properties.getString("h").get());
-		assertEquals("", properties.getString("i").get());
-		assertEquals("", properties.getString("j").get());
-		assertEquals("", properties.getString("k").get());
+		IProperties properties = HPropertiesParser.parse(file, System.err::println);
+		assertEquals("test-5.0.1.jar", properties.get("archiveName").getString().get());
+		assertEquals(1, (int) properties.get("a").getInteger().get());
+		assertEquals(2, (int) properties.get("b").getInteger().get());
+		assertEquals("3", properties.get("c").getString().get());
+		assertEquals(4, (int) properties.get("d.e").getInteger().get());
+		assertEquals(5, (int) properties.get("f/g").getInteger().get());
+		assertEquals("", properties.get("h").getString().get());
+		assertEquals("", properties.get("i").getString().get());
+		assertEquals("", properties.get("j").getString().get());
+		assertEquals("", properties.get("k").getString().get());
 
-		assertEquals(6, (int) properties.getInteger("abc_-./:()01").get());
+		assertEquals(6, (int) properties.get("abc_-./:()01").getInteger().get());
 
-		assertEquals("\"'\\345", properties.getString("l").get());
-		assertEquals("\"'\\${10}", properties.getString("m").get());
-		assertEquals("\\\\ \\ 345", properties.getString("n").get());
+		assertEquals("\"'\\345", properties.get("l").getString().get());
+		assertEquals("\"'\\${10}", properties.get("m").getString().get());
+		assertEquals("\\\\ \\ 345", properties.get("n").getString().get());
 
-		assertEquals(new File("test.properties").getAbsoluteFile().getPath(), properties.getString("o2").get());
-		assertEquals(new File("test.properties").getAbsoluteFile().getParent(), properties.getString("p2").get());
-		assertEquals(new File("test2.properties").getAbsoluteFile().getPath(), properties.getString("o").get());
-		assertEquals(new File("test2.properties").getAbsoluteFile().getParent(), properties.getString("p").get());
+		assertEquals(new File("test.properties").getAbsoluteFile().getPath(), properties.get("o2").getString().get());
+		assertEquals(new File("test.properties").getAbsoluteFile().getParent(), properties.get("p2").getString().get());
+		assertEquals(new File("test2.properties").getAbsoluteFile().getPath(), properties.get("o").getString().get());
+		assertEquals(new File("test2.properties").getAbsoluteFile().getParent(), properties.get("p").getString().get());
 
-		assertEquals("200", properties.getString("r1").get());
-		assertEquals("100", properties.getString("r2").get());
-		assertEquals("100200", properties.getString("s").get());
+		assertEquals("200", properties.get("r1").getString().get());
+		assertEquals("100", properties.get("r2").getString().get());
+		assertEquals("100200", properties.get("s").getString().get());
+		assertEquals("500", properties.get("u1").getString().get());
+		assertEquals("200", properties.get("u2").getString().get());
 
-		assertEquals(1.35, properties.getDouble("double").get(), 0.001);
-		assertEquals(true, (boolean) properties.getBoolean("boolean1").get());
-		assertEquals(false, (boolean) properties.getBoolean("boolean2").get());
+		assertEquals(1.35, properties.get("double").getDouble().get(), 0.001);
+		assertEquals(true, (boolean) properties.get("boolean1").getBoolean().get());
+		assertEquals(false, (boolean) properties.get("boolean2").getBoolean().get());
 	}
 
 	@Test
 	public void test_exception_message() throws FileNotFoundException
 	{
 		int[] count = new int[1];
-		Properties properties = HPropertiesParser.parse(new File("test_exception.properties"), e -> {
+		HPropertiesParser.parse(new File("test_exception.properties"), e -> {
 			if (e instanceof SyntaxException) {
 				assertEquals("Syntax error at test_exception.properties (R:2 C:4)\nasd\n   ^", e.getMessage());
 			} else {
