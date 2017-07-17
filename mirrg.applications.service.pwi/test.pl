@@ -25,7 +25,9 @@ while (<>) {
 		print "stopped", "\n";
 		exit(0);
 	}
-	print $_, $_, "\n";
+	print $_, "\n";
+	sleep(1);
+	print $_, "\n";
 }
 
 print "stdin closed", "\n";

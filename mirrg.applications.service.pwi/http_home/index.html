@@ -11,6 +11,10 @@
 	var commandNew = "";
 	var lastLogs = -1;
 
+	function autoRefresh() {
+		if ($("#autoRefresh").prop('checked')) refresh();
+	}
+
 	function refresh() {
 		refreshImpl(false);
 	}
@@ -46,7 +50,7 @@
 
 	function send(command) {
 		$.ajax({
-			url : "/api/send?" + command,
+			url : "/api/send?" + encodeURIComponent(command),
 			success : function(data) {
 				setTimeout(refresh, 200);
 			}
@@ -85,8 +89,8 @@
 		document.title = page_title;
 		$("#application_name").text(application_name);
 
-		setTimeout(refresh, 10);
-		setInterval(refresh, 5000);
+		setTimeout(autoRefresh, 10);
+		setInterval(autoRefresh, 5000);
 		$("#command").val(command_default);
 		buttons.forEach(function(button) {
 			var $input = $("<input>");
@@ -164,7 +168,7 @@ iframe {
 					<tr>
 						<td><input type="button" value="更新" onclick='refreshForce();'> <input type="text" style="width: 300px;" id="command" value=""> <input type="button" value="送信"
 							onclick='submit()'></td>
-						<td style="text-align: right;"><input type="checkbox" checked="checked" id="autoScroll"><label for="autoScroll">自動スクロール</label> <span id="buttons"></span></td>
+						<td style="text-align: right;"><input type="checkbox" checked="checked" id="autoRefresh"><label for="autoRefresh">自動更新</label> <input type="checkbox" checked="checked" id="autoScroll"><label for="autoScroll">自動スクロール</label> <span id="buttons"></span></td>
 					</tr>
 				</table>
 			</td>

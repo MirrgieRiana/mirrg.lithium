@@ -68,7 +68,12 @@ public class BlockWeb extends BlockBase
 									t.x,
 									t.y.time.format(FORMATTER_LOG),
 									t.y.source.name,
-									t.y.text))
+									t.y.text
+										.replaceAll("&", "&amp;")
+										.replaceAll("<", "&lt;")
+										.replaceAll(">", "&gt;")
+										.replaceAll(" ", "&nbsp;")
+										.replaceAll("\n", "<br>")))
 								.collect(Collectors.joining())));
 						return;
 					}
