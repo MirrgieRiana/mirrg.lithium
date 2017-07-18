@@ -130,7 +130,6 @@ public class BlockWeb extends BlockBase
 						for (CGISetting cgiSetting : settings.cgiSettings) {
 							if (file.getPath().endsWith(cgiSetting.fileNameSuffix)) {
 								new CGISettings(
-									settings.name,
 									settings.port,
 									getServerName() + "/" + getServerVersion(),
 									new File(dir),
@@ -267,7 +266,6 @@ public class BlockWeb extends BlockBase
 	{
 
 		public String host;
-		public String name;
 		public int port;
 		public int backlog;
 

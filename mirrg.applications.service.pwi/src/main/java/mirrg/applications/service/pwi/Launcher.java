@@ -123,7 +123,6 @@ public class Launcher
 					new WebSettings() {
 						{
 							host = properties.get("plugin.web.host");
-							name = properties.get("plugin.web.name");
 							port = properties.getInteger("plugin.web.port").get();
 							backlog = properties.getInteger("plugin.web.backlog").get();
 
