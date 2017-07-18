@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.channels.ClosedByInterruptException;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -107,9 +108,14 @@ public class CGIRunner
 		processBuilder.directory(scriptFile.getAbsoluteFile().getParentFile());
 
 		// HTTPで始まる環境変数の設定
+		Hashtable<String, String> requestHeaders = new Hashtable<>();
 		for (Entry<String, List<String>> entry : httpExchange.getRequestHeaders().entrySet()) {
 			for (String value : entry.getValue()) {
-				putEnvironment(processBuilder, "HTTP_" + entry.getKey().toUpperCase().replaceAll("-", "_"), value);
+				String key = "HTTP_" + entry.getKey().toUpperCase().replaceAll("-", "_");
+				if (value == null) value = "";
+
+				requestHeaders.put(key, value);
+				putEnvironment(processBuilder, key, value);
 			}
 			counter.count();
 		}
@@ -117,7 +123,7 @@ public class CGIRunner
 		// その他の環境変数の設定
 		{
 			putEnvironment(processBuilder, "CONTENT_LENGTH", "" + contentLength);
-			putEnvironment(processBuilder, "CONTENT_TYPE", httpExchange.getRequestHeaders().getFirst("content-type"));
+			putEnvironment(processBuilder, "CONTENT_TYPE", requestHeaders.get("HTTP_CONTENT_TYPE"));
 			putEnvironment(processBuilder, "GATEWAY_INTERFACE", "CGI/1.1");
 			putEnvironment(processBuilder, "PATH_INFO", oPathInfo.orElse(null));
 			putEnvironment(processBuilder, "PATH_TRANSLATED", oPathTranslated.orElse(null));
@@ -130,7 +136,7 @@ public class CGIRunner
 			putEnvironment(processBuilder, "DOCUMENT_ROOT", cgiSettings.documentRoot.getAbsolutePath());
 			putEnvironment(processBuilder, "SCRIPT_FILENAME", scriptFile.getAbsolutePath());
 			putEnvironment(processBuilder, "SCRIPT_NAME", httpExchange.getRequestURI().getPath());
-			putEnvironment(processBuilder, "SERVER_NAME", "" + cgiSettings.name);
+			putEnvironment(processBuilder, "SERVER_NAME", requestHeaders.get("HTTP_HOST"));
 			putEnvironment(processBuilder, "SERVER_PORT", "" + cgiSettings.port);
 			putEnvironment(processBuilder, "SERVER_PROTOCOL", "HTTP/1.1");
 			putEnvironment(processBuilder, "SERVER_SOFTWARE", cgiSettings.software);
@@ -141,8 +147,7 @@ public class CGIRunner
 
 	private void putEnvironment(ProcessBuilder processBuilder, String key, String value)
 	{
-		if (value == null) value = "";
-		processBuilder.environment().put(key, value);
+		processBuilder.environment().put(key, value == null ? "" : value);
 	}
 
 	private Struct2<byte[], Integer> doProcess(ProcessBuilder processBuilder, Struct2<byte[], Integer> requestBuffer) throws HTTPResponse

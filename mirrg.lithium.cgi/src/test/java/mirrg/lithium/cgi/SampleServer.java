@@ -43,7 +43,6 @@ public class SampleServer
 		});
 		httpServer.bind(new InetSocketAddress("127.0.0.1", 0), 10);
 		cgiEnvironments = new CGISettings(
-			"localhost",
 			httpServer.getAddress().getPort(),
 			TestCgi.class.getName(),
 			new File("cgi-bin"),

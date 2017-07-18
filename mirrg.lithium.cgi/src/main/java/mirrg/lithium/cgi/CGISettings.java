@@ -13,7 +13,6 @@ import mirrg.lithium.struct.Struct2;
 public class CGISettings
 {
 
-	public final String name;
 	public final int port;
 	public final String software;
 	public final File documentRoot;
@@ -23,7 +22,6 @@ public class CGISettings
 	private Struct2<byte[], Integer> responseBuffer = new Struct2<>();
 
 	public CGISettings(
-		String name,
 		int port,
 		String software,
 		File documentRoot,
@@ -32,7 +30,6 @@ public class CGISettings
 		int requestBufferSize,
 		int responseBufferSize)
 	{
-		this.name = name;
 		this.port = port;
 		this.software = software;
 		this.documentRoot = documentRoot;
