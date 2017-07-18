@@ -136,7 +136,11 @@ public class CGIRunner
 			putEnvironment(processBuilder, "DOCUMENT_ROOT", cgiSettings.documentRoot.getAbsolutePath());
 			putEnvironment(processBuilder, "SCRIPT_FILENAME", scriptFile.getAbsolutePath());
 			putEnvironment(processBuilder, "SCRIPT_NAME", httpExchange.getRequestURI().getPath());
-			putEnvironment(processBuilder, "SERVER_NAME", requestHeaders.get("HTTP_HOST"));
+			{
+				String name = requestHeaders.get("HTTP_HOST");
+				if (name.indexOf(':') != -1) name = name.substring(0, name.indexOf(':'));
+				putEnvironment(processBuilder, "SERVER_NAME", name);
+			}
 			putEnvironment(processBuilder, "SERVER_PORT", "" + cgiSettings.port);
 			putEnvironment(processBuilder, "SERVER_PROTOCOL", "HTTP/1.1");
 			putEnvironment(processBuilder, "SERVER_SOFTWARE", cgiSettings.software);
