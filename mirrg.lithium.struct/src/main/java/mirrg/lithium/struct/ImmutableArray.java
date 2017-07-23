@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 public final class ImmutableArray<T>
 {
 
-	public final T[] array;
+	private final T[] array;
 
 	@SuppressWarnings("unchecked")
 	@SafeVarargs
