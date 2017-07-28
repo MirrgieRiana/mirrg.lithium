@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import javax.swing.AbstractButton;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -269,6 +270,12 @@ public class HSwing
 	public static <T extends Component> T setPreferredSize(T component, int width, int rows)
 	{
 		component.setPreferredSize(new Dimension(width, component.getFont().getSize() * rows + 6));
+		return component;
+	}
+
+	public static <T extends AbstractButton> T addIntoButtonGroup(T component, ButtonGroup buttonGroup)
+	{
+		buttonGroup.add(component);
 		return component;
 	}
 

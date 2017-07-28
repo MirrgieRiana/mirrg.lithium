@@ -17,7 +17,9 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Optional;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
+import javax.swing.JRadioButton;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
@@ -37,55 +39,72 @@ public class Main
 	}
 
 	private JTextPane textPane;
+	private ButtonGroup buttonGroupSigned;
+	private JRadioButton radioButtonUnsigned;
+	private JRadioButton radioButtonSigned;
 
 	@SuppressWarnings("unchecked")
 	public void main()
 	{
 		JFrame frame = new JFrame("Bin2Csv");
 		frame.setLayout(new CardLayout());
-		frame.add(createScrollPane(get(() -> {
-			textPane = new JTextPane();
-			textPane.setText("ここにファイルをドロップ\n");
-			textPane.setEditable(false);
-			textPane.setTransferHandler(new TransferHandler() {
-
-				@Override
-				public boolean canImport(TransferSupport support)
-				{
-					for (DataFlavor dataFlavor : support.getDataFlavors()) {
-						if (DataFlavor.javaFileListFlavor.equals(dataFlavor)) {
-							return support.getDropAction() == MOVE;
-						}
+		buttonGroupSigned = new ButtonGroup();
+		frame.add(createBorderPanelDown(
+			createScrollPane(get(() -> {
+				textPane = new JTextPane() {
+					@Override
+					public boolean getScrollableTracksViewportWidth()
+					{
+						return getParent() != null
+							? (getUI().getPreferredSize(this).width <= getParent().getSize().width)
+							: true;
 					}
-					return false;
-				}
+				};
+				textPane.setText("ここにファイルをドロップ\n");
+				textPane.setEditable(false);
+				textPane.setTransferHandler(new TransferHandler() {
 
-				@Override
-				public boolean importData(TransferSupport support)
-				{
-					if (support.isDrop()) {
-						if (support.getDropAction() == MOVE) {
-
-							List<File> files;
-							try {
-								Object data = support.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
-								files = (List<File>) data;
-							} catch (UnsupportedFlavorException | IOException e) {
-								printStackTrace(e);
-								return false;
+					@Override
+					public boolean canImport(TransferSupport support)
+					{
+						for (DataFlavor dataFlavor : support.getDataFlavors()) {
+							if (DataFlavor.javaFileListFlavor.equals(dataFlavor)) {
+								return support.getDropAction() == MOVE;
 							}
-
-							start(files);
-
-							return true;
 						}
+						return false;
 					}
-					return false;
-				}
 
-			});
-			return textPane;
-		}), 600, 200));
+					@Override
+					public boolean importData(TransferSupport support)
+					{
+						if (support.isDrop()) {
+							if (support.getDropAction() == MOVE) {
+
+								List<File> files;
+								try {
+									Object data = support.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+									files = (List<File>) data;
+								} catch (UnsupportedFlavorException | IOException e) {
+									printStackTrace(e);
+									return false;
+								}
+
+								start(files);
+
+								return true;
+							}
+						}
+						return false;
+					}
+
+				});
+				return textPane;
+			}), 600, 200),
+			createBorderPanelLeft(
+				addIntoButtonGroup(radioButtonUnsigned = new JRadioButton("unsigned(0～255)", true), buttonGroupSigned),
+				addIntoButtonGroup(radioButtonSigned = new JRadioButton("signed(-128～127)", true), buttonGroupSigned),
+				null)));
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setLocationByPlatform(true);
 		frame.pack();
@@ -98,6 +117,10 @@ public class Main
 			for (File file : files) {
 				if (file.isFile()) {
 					processFile(file);
+				} else if (file.isDirectory()) {
+					for (File file2 : file.listFiles()) {
+						processFile(file2);
+					}
 				} else {
 					println("'" + file + "' is not a file!", Optional.empty(), Optional.of(Color.decode("#ffaa88")));
 				}
@@ -135,7 +158,11 @@ public class Main
 				int res;
 				while ((res = in.read(bytes)) != -1) {
 					for (int i = 0; i < res; i++) {
-						out.println((bytes[i]) & 0xff);
+						if (buttonGroupSigned.getSelection() == radioButtonSigned.getModel()) {
+							out.println(bytes[i]);
+						} else if (buttonGroupSigned.getSelection() == radioButtonUnsigned.getModel()) {
+							out.println((bytes[i]) & 0xff);
+						}
 					}
 				}
 
