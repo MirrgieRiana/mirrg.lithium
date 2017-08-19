@@ -7,20 +7,22 @@ import java.util.Optional;
 
 import com.sun.net.httpserver.HttpServer;
 
-import mirrg.lithium.struct.ImmutableArray;
+import mirrg.lithium.struct.Struct1;
 
 public class SampleServer
 {
-	private static CGISettings cgiEnvironments;
 
 	public static void main(String[] args) throws IOException
 	{
+		Struct1<CGIServerSetting> sCgiServerSetting = new Struct1<>();
 		HttpServer httpServer = HttpServer.create();
-		httpServer.createContext("/", e -> {
+		httpServer.createContext("/", e -> new Thread(() -> {
 			File scriptFile = new File("cgi-bin" + e.getRequestURI().getPath());
 			if (scriptFile.isFile()) {
-				cgiEnvironments.doCGI(
+				new CGIRunner(
+					sCgiServerSetting.x,
 					e,
+					new String[] { "perl", "%s" },
 					scriptFile,
 					Optional.empty(),
 					Optional.empty(),
@@ -36,20 +38,23 @@ public class SampleServer
 						{
 							e.printStackTrace();
 						}
-					});
+					},
+					1000).run();
 			} else {
-				HTTPResponse.get(404).sendResponse(e);
+				try {
+					HTTPResponse.get(404).sendResponse(e);
+				} catch (IOException e2) {
+					e2.printStackTrace();
+				}
 			}
-		});
+		}).start());
 		httpServer.bind(new InetSocketAddress("127.0.0.1", 0), 10);
-		cgiEnvironments = new CGISettings(
+		sCgiServerSetting.x = new CGIServerSetting(
 			httpServer.getAddress().getPort(),
 			TestCgi.class.getName(),
 			new File("cgi-bin"),
-			new ImmutableArray<>("perl", "%s"),
 			1000,
-			1000,
-			1000000);
+			new CGIBufferPool(100 * 1000, 10 * 1000 * 1000, 10, 10000));
 		httpServer.start();
 
 		System.out.println("http://localhost:" + httpServer.getAddress().getPort());

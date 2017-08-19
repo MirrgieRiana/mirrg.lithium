@@ -1,44 +1,33 @@
 package mirrg.lithium.cgi;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Optional;
 
-import com.sun.net.httpserver.HttpExchange;
-
-import mirrg.lithium.struct.ImmutableArray;
 import mirrg.lithium.struct.Struct2;
 
-public class CGISettings
+public class CGIBuffer implements AutoCloseable
 {
 
-	public final int port;
-	public final String software;
-	public final File documentRoot;
-	public final ImmutableArray<String> command;
-	public final int timeoutMs;
+	private CGIBufferPool owner;
 	private Struct2<byte[], Integer> requestBuffer = new Struct2<>();
 	private Struct2<byte[], Integer> responseBuffer = new Struct2<>();
 
-	public CGISettings(
-		int port,
-		String software,
-		File documentRoot,
-		ImmutableArray<String> command,
-		int timeoutMs,
-		int requestBufferSize,
-		int responseBufferSize)
+	public boolean using = false;
+
+	public CGIBuffer(CGIBufferPool owner, int requestBufferSize, int responseBufferSize)
 	{
-		this.port = port;
-		this.software = software;
-		this.documentRoot = documentRoot;
-		this.command = command;
-		this.timeoutMs = timeoutMs;
+		this.owner = owner;
 		this.requestBuffer.x = new byte[requestBufferSize];
 		this.requestBuffer.y = 0;
 		this.responseBuffer.x = new byte[responseBufferSize];
 		this.responseBuffer.y = 0;
+	}
+
+	@Override
+	public void close()
+	{
+		using = false;
+		owner.onClose(this);
 	}
 
 	public Struct2<byte[], Integer> readRequest(InputStream in, ILogger logger) throws HTTPResponse
@@ -105,30 +94,6 @@ public class CGISettings
 				throw HTTPResponse.get(500);
 			}
 		}
-	}
-
-	public String[] createCommand(File scriptFile)
-	{
-		return command.stream()
-			.map(s -> s.replace("%s", scriptFile.getAbsolutePath()))
-			.toArray(String[]::new);
-	}
-
-	public void doCGI(
-		HttpExchange httpExchange,
-		File scriptFile,
-		Optional<String> oPathInfo,
-		Optional<String> oPathTranslated,
-		ILogger logger)
-	{
-		new CGIRunner(
-			this,
-			httpExchange,
-			scriptFile,
-			oPathInfo,
-			oPathTranslated,
-			logger,
-			1000).doCGI();
 	}
 
 }

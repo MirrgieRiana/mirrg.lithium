@@ -12,8 +12,10 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import com.sun.net.httpserver.HttpExchange;
 
@@ -24,8 +26,9 @@ import mirrg.lithium.struct.Tuple;
 public class CGIRunner
 {
 
-	private CGISettings cgiSettings;
+	private CGIServerSetting cgiServerSetting;
 	private HttpExchange httpExchange;
+	private String[] commandFormat;
 	private File scriptFile;
 	private Optional<String> oPathInfo;
 	private Optional<String> oPathTranslated;
@@ -33,16 +36,18 @@ public class CGIRunner
 	private Counter counter;
 
 	public CGIRunner(
-		CGISettings cgiEnvironment,
+		CGIServerSetting cgiServerSetting,
 		HttpExchange httpExchange,
+		String[] commandFormat,
 		File scriptFile,
 		Optional<String> oPathInfo,
 		Optional<String> oPathTranslated,
 		ILogger logger,
 		int counterLimit)
 	{
-		this.cgiSettings = cgiEnvironment;
+		this.cgiServerSetting = cgiServerSetting;
 		this.httpExchange = httpExchange;
+		this.commandFormat = commandFormat;
 		this.scriptFile = scriptFile;
 		this.oPathInfo = oPathInfo;
 		this.oPathTranslated = oPathTranslated;
@@ -50,11 +55,17 @@ public class CGIRunner
 		this.counter = new Counter(counterLimit);
 	}
 
-	public void doCGI()
+	public void run()
 	{
 		try {
 			try {
-				throw doCGIImpl();
+				try {
+					try (CGIBuffer cgiBuffer = cgiServerSetting.cgiBufferPool.assign()) {
+						throw runImpl(cgiBuffer);
+					}
+				} catch (TimeoutException e) {
+					throw HTTPResponse.get(503);
+				}
 			} catch (RuntimeException e) {
 				logger.accept(e);
 				throw HTTPResponse.get(500);
@@ -69,17 +80,17 @@ public class CGIRunner
 		}
 	}
 
-	private HTTPResponse doCGIImpl() throws HTTPResponse
+	private HTTPResponse runImpl(CGIBuffer cgiBuffer) throws HTTPResponse
 	{
 
 		// リクエストを全て回収
-		Struct2<byte[], Integer> requestBuffer = readRequest();
+		Struct2<byte[], Integer> requestBuffer = readRequest(cgiBuffer);
 
 		// プロセスビルダの生成
 		ProcessBuilder processBuilder = createProcessBuilder(requestBuffer.y);
 
 		// プロセスの実行
-		Struct2<byte[], Integer> responseBuffer = doProcess(processBuilder, requestBuffer);
+		Struct2<byte[], Integer> responseBuffer = doProcess(processBuilder, requestBuffer, cgiBuffer);
 
 		// レスポンスヘッダ抜き出し
 		Tuple<String, Integer> res = splitResponse(responseBuffer);
@@ -92,10 +103,10 @@ public class CGIRunner
 
 	}
 
-	private Struct2<byte[], Integer> readRequest() throws HTTPResponse
+	private Struct2<byte[], Integer> readRequest(CGIBuffer cgiBuffer) throws HTTPResponse
 	{
 		try (InputStream in = httpExchange.getRequestBody()) {
-			return cgiSettings.readRequest(in, logger);
+			return cgiBuffer.readRequest(in, logger);
 		} catch (IOException e) {
 			logger.accept(e);
 			throw HTTPResponse.get(400);
@@ -104,7 +115,7 @@ public class CGIRunner
 
 	private ProcessBuilder createProcessBuilder(int contentLength)
 	{
-		ProcessBuilder processBuilder = new ProcessBuilder(cgiSettings.createCommand(scriptFile));
+		ProcessBuilder processBuilder = new ProcessBuilder(createCommand(scriptFile));
 		processBuilder.directory(scriptFile.getAbsoluteFile().getParentFile());
 
 		// HTTPで始まる環境変数の設定
@@ -133,7 +144,7 @@ public class CGIRunner
 			putEnvironment(processBuilder, "REMOTE_PORT", "" + httpExchange.getRemoteAddress().getPort());
 			putEnvironment(processBuilder, "REQUEST_METHOD", httpExchange.getRequestMethod());
 			putEnvironment(processBuilder, "REQUEST_URI", httpExchange.getRequestURI().getPath());
-			putEnvironment(processBuilder, "DOCUMENT_ROOT", cgiSettings.documentRoot.getAbsolutePath());
+			putEnvironment(processBuilder, "DOCUMENT_ROOT", cgiServerSetting.documentRoot.getAbsolutePath());
 			putEnvironment(processBuilder, "SCRIPT_FILENAME", scriptFile.getAbsolutePath());
 			putEnvironment(processBuilder, "SCRIPT_NAME", httpExchange.getRequestURI().getPath());
 			{
@@ -141,12 +152,19 @@ public class CGIRunner
 				if (name.indexOf(':') != -1) name = name.substring(0, name.indexOf(':'));
 				putEnvironment(processBuilder, "SERVER_NAME", name);
 			}
-			putEnvironment(processBuilder, "SERVER_PORT", "" + cgiSettings.port);
+			putEnvironment(processBuilder, "SERVER_PORT", "" + cgiServerSetting.port);
 			putEnvironment(processBuilder, "SERVER_PROTOCOL", "HTTP/1.1");
-			putEnvironment(processBuilder, "SERVER_SOFTWARE", cgiSettings.software);
+			putEnvironment(processBuilder, "SERVER_SOFTWARE", cgiServerSetting.software);
 		}
 
 		return processBuilder;
+	}
+
+	private String[] createCommand(File scriptFile)
+	{
+		return Stream.of(commandFormat)
+			.map(s -> s.replace("%s", scriptFile.getAbsolutePath()))
+			.toArray(String[]::new);
 	}
 
 	private void putEnvironment(ProcessBuilder processBuilder, String key, String value)
@@ -154,7 +172,7 @@ public class CGIRunner
 		processBuilder.environment().put(key, value == null ? "" : value);
 	}
 
-	private Struct2<byte[], Integer> doProcess(ProcessBuilder processBuilder, Struct2<byte[], Integer> requestBuffer) throws HTTPResponse
+	private Struct2<byte[], Integer> doProcess(ProcessBuilder processBuilder, Struct2<byte[], Integer> requestBuffer, CGIBuffer cgiBuffer) throws HTTPResponse
 	{
 
 		// プロセス開始
@@ -186,7 +204,7 @@ public class CGIRunner
 		Thread threadOut = new Thread(() -> {
 			try {
 				try (InputStream in = process.getInputStream()) {
-					responseBuffer.x = cgiSettings.readResponse(in, logger);
+					responseBuffer.x = cgiBuffer.readResponse(in, logger);
 				} catch (IOException e) {
 					logger.accept(e);
 					connectionError.x = HTTPResponse.get(500);
@@ -224,7 +242,7 @@ public class CGIRunner
 
 		// プロセス完了待ち
 		try {
-			process.waitFor(cgiSettings.timeoutMs, TimeUnit.MILLISECONDS);
+			process.waitFor(cgiServerSetting.timeoutMs, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			connectionError.x = HTTPResponse.get(504);
 		}
