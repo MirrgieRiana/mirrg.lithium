@@ -37,7 +37,7 @@ public class BlockCommand extends BlockLineBufferBase
 			} else {
 				Matcher matcher = PATTERN_GET.matcher(line.text);
 				if (matcher.matches()) {
-					serviceOut.onLine(new Line(source, launcher.properties.getString(matcher.group(1)).orElse("undefined")));
+					serviceOut.onLine(new Line(source, launcher.properties.get(matcher.group(1)).getString().orElse("undefined")));
 				} else if (line.text.equals("/exit")) {
 					launcher.restartable = false;
 					serviceOut.onLine(new Line(source, "Stopping"));

@@ -16,15 +16,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import mirrg.applications.service.pwi.BlockWeb.WebSettings;
+import mirrg.applications.service.pwi.BlockWeb.WebSetting;
 import mirrg.lithium.lang.HString;
-import mirrg.lithium.properties.Properties;
+import mirrg.lithium.properties.IProperties;
+import mirrg.lithium.properties.PropertiesMultipleInheritable;
+import mirrg.lithium.properties.PropertyBasic;
 import mirrg.lithium.struct.Struct1;
 
 public class Launcher
 {
 
-	public Properties properties;
+	public PropertiesMultipleInheritable properties;
 
 	public volatile boolean restartable;
 	public int serviceNumber;
@@ -50,35 +52,36 @@ public class Launcher
 
 	public Logger logger;
 
-	public Launcher(Properties properties)
+	public Launcher(IProperties properties)
 	{
-		this.properties = properties;
+		this.properties = new PropertiesMultipleInheritable();
+		this.properties.addParent(properties);
 	}
 
 	public void run() throws Exception
 	{
 
 		// プロパティメソッドの設定
-		properties.put("time.id", p -> getTimeId());
-		properties.put("service.number", p -> "" + serviceNumber);
-		properties.put("service.number.id", p -> HString.fillLeft('0', p.get("service.number"), 5));
-		properties.put("service.id", p -> serviceId);
-		properties.put("session.number", p -> oSession.map(s -> "" + s.sessionNumber).orElse("undefined"));
-		properties.put("session.number.id", p -> HString.fillLeft('0', p.get("session.number"), 5));
-		properties.put("session.id", p -> "" + oSession.map(s -> s.sessionId).orElse("undefined"));
+		properties.put("time.id", p -> new PropertyBasic(getTimeId()));
+		properties.put("service.number", p -> new PropertyBasic("" + serviceNumber));
+		properties.put("service.number.id", p -> new PropertyBasic(HString.fillLeft('0', p.get("service.number").getString().get(), 5)));
+		properties.put("service.id", p -> new PropertyBasic(serviceId));
+		properties.put("session.number", p -> new PropertyBasic(oSession.map(s -> "" + s.sessionNumber).orElse("undefined")));
+		properties.put("session.number.id", p -> new PropertyBasic(HString.fillLeft('0', p.get("session.number").getString().get(), 5)));
+		properties.put("session.id", p -> new PropertyBasic("" + oSession.map(s -> s.sessionId).orElse("undefined")));
 
 		// 各種変数の初期化
-		restartable = properties.getBoolean("restartable").get();
+		restartable = properties.get("restartable").getBoolean().get();
 		serviceNumber = createServiceNumber();
-		serviceId = properties.get("service.id.format");
-		File fileServiceLog = new File(properties.get("file.service.log"));
+		serviceId = properties.get("service.id.format").getString().get();
+		File fileServiceLog = new File(properties.get("file.service.log").getString().get());
 
 		////////
 
 		lineBufferServiceIn = new LineBuffer();
 		lineBufferPreSession = new LineBuffer();
 		lineBufferServiceOut = new LineBuffer();
-		lineStorageWeb = new LineStorage(properties.getInteger("log.lines").get());
+		lineStorageWeb = new LineStorage(properties.get("log.lines").getInteger().get());
 
 		logger = new Logger(lineBufferServiceOut, new LineSource("SERVICE", "magenta"));
 
@@ -99,7 +102,7 @@ public class Launcher
 
 		//
 
-		logger.log(properties.get("message.service.start"));
+		logger.log(properties.get("message.service.start").getString().get());
 
 		// 各種スレッド等構築
 		Consumer<Runnable> frame = Runnable::run;
@@ -118,24 +121,24 @@ public class Launcher
 				lineBufferServiceIn).start(true));
 
 			// webから読み込んでserviceInに送る
-			if (properties.getBoolean("plugin.web").get()) {
+			if (properties.get("plugin.web").getBoolean().get()) {
 				frame = createFrame(frame, () -> new BlockWeb(logger,
-					new WebSettings() {
+					new WebSetting() {
 						{
-							host = properties.get("plugin.web.host");
-							port = properties.getInteger("plugin.web.port").get();
-							backlog = properties.getInteger("plugin.web.backlog").get();
+							host = properties.get("plugin.web.host").getString().get();
+							port = properties.get("plugin.web.port").getInteger().get();
+							backlog = properties.get("plugin.web.backlog").getInteger().get();
 
-							homeDirectory = parseHomeDirectory(properties.get("plugin.web.homeDirectory"));
-							cgiSettings = parseCgiSettings(properties.get("plugin.web.cgi"));
-							indexes = parseIndexes(properties.get("plugin.web.indexes"));
+							homeDirectory = parseHomeDirectory(properties.get("plugin.web.homeDirectory").getString().get());
+							cgiSettings = parseCgiSettings(properties.get("plugin.web.cgi").getString().get());
+							indexes = parseIndexes(properties.get("plugin.web.indexes").getString().get());
 
-							timeoutMs = properties.getInteger("plugin.web.timeoutMs").get();
-							requestBufferSize = properties.getInteger("plugin.web.requestBufferSize").get();
-							responseBufferSize = properties.getInteger("plugin.web.responseBufferSize").get();
+							timeoutMs = properties.get("plugin.web.timeoutMs").getInteger().get();
+							requestBufferSize = properties.get("plugin.web.requestBufferSize").getInteger().get();
+							responseBufferSize = properties.get("plugin.web.responseBufferSize").getInteger().get();
 
-							needAuthentication = properties.getBoolean("plugin.web.needAuthentication").get();
-							basicAuthenticationRegex = properties.get("plugin.web.basicAuthenticationRegex");
+							needAuthentication = properties.get("plugin.web.needAuthentication").getBoolean().get();
+							basicAuthenticationRegex = properties.get("plugin.web.basicAuthenticationRegex").getString().get();
 
 							lineStorage = lineStorageWeb;
 						}
@@ -189,17 +192,17 @@ public class Launcher
 		Session session = new Session();
 		oSession = Optional.of(session);
 		session.sessionNumber = sessionNumber;
-		session.sessionId = properties.get("session.id.format");
-		session.encoding = properties.get("encoding");
+		session.sessionId = properties.get("session.id.format").getString().get();
+		session.encoding = properties.get("encoding").getString().get();
 		if (session.encoding.isEmpty()) session.encoding = Charset.defaultCharset().name();
 
-		logger.log(properties.get("message.session.start"));
+		logger.log(properties.get("message.session.start").getString().get());
 
 		////////
 
 		// 実行の設定
-		session.command = properties.get("command").split(" +");
-		session.currentDirectory = new File(properties.get("currentDirectory"));
+		session.command = properties.get("command").getString().get().split(" +");
+		session.currentDirectory = new File(properties.get("currentDirectory").getString().get());
 		session.currentDirectory.mkdirs();
 
 		// 実行
@@ -269,7 +272,7 @@ public class Launcher
 
 	private int createServiceNumber() throws InterruptedException
 	{
-		File fileLock = new File(properties.get("file.lock"));
+		File fileLock = new File(properties.get("file.lock").getString().get());
 
 		int serviceNumber = 0;
 		while (true) {
@@ -280,7 +283,7 @@ public class Launcher
 				StandardOpenOption.WRITE);
 				FileLock lock = channel.tryLock()) {
 
-				File fileServiceNumber = new File(properties.get("file.service.number"));
+				File fileServiceNumber = new File(properties.get("file.service.number").getString().get());
 				fileServiceNumber.getParentFile().mkdirs();
 
 				// サービス番号の取得

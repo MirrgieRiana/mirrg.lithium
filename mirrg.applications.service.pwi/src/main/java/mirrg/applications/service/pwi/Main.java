@@ -4,7 +4,8 @@ import java.io.File;
 import java.util.ArrayList;
 
 import mirrg.lithium.properties.HPropertiesParser;
-import mirrg.lithium.properties.Properties;
+import mirrg.lithium.properties.IProperties;
+import mirrg.lithium.properties.PropertiesMultipleInheritable;
 
 public class Main
 {
@@ -15,11 +16,11 @@ public class Main
 		new Thread(() -> System.exit(0)).start();
 	}
 
-	private static Properties parse(String defaultPropertyFileName, String... args) throws Exception
+	private static IProperties parse(String defaultPropertyFileName, String... args) throws Exception
 	{
 		boolean useDefaultPropertyFile = true;
 
-		Properties properties = new Properties();
+		PropertiesMultipleInheritable properties = new PropertiesMultipleInheritable();
 		{
 			for (String arg : args) {
 

@@ -15,23 +15,24 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
-import mirrg.applications.service.pwi.BlockWeb.WebSettings.CGISetting;
-import mirrg.lithium.cgi.CGISettings;
+import mirrg.applications.service.pwi.BlockWeb.WebSetting.CGISetting;
+import mirrg.lithium.cgi.CGIBufferPool;
+import mirrg.lithium.cgi.CGIRunner;
+import mirrg.lithium.cgi.CGIServerSetting;
 import mirrg.lithium.cgi.ILogger;
-import mirrg.lithium.struct.ImmutableArray;
 import mirrg.lithium.struct.Tuple;
 
 public class BlockWeb extends BlockBase
 {
 
-	private WebSettings settings;
+	private WebSetting setting;
 	private LineSource source;
 	private ILineReceiver receiver;
 
-	public BlockWeb(Logger logger, WebSettings settings, LineSource source, ILineReceiver receiver) throws Exception
+	public BlockWeb(Logger logger, WebSetting setting, LineSource source, ILineReceiver receiver) throws Exception
 	{
 		super(logger);
-		this.settings = settings;
+		this.setting = setting;
 		this.source = source;
 		this.receiver = receiver;
 	}
@@ -43,137 +44,154 @@ public class BlockWeb extends BlockBase
 	{
 
 		// create server
-		HttpServer httpServer = HttpServer.create(new InetSocketAddress(settings.host, settings.port), settings.backlog);
+		HttpServer httpServer = HttpServer.create(new InetSocketAddress(setting.host, setting.port), setting.backlog);
 		{
 			HttpContext context = httpServer.createContext("/", e -> {
-				String path = e.getRequestURI().getPath();
-				String username = e.getPrincipal() == null ? "Guest" : e.getPrincipal().getUsername();
+				new Thread(() -> {
+					try {
+						String path = e.getRequestURI().getPath();
+						String username = e.getPrincipal() == null ? "Guest" : e.getPrincipal().getUsername();
 
-				// 異常URLの除去
-				if ((path + "/").indexOf("/../") != -1) {
-					send(e, 403, "403");
-					return;
-				}
+						// 異常URLの除去
+						if ((path + "/").indexOf("/../") != -1) {
+							send(e, 403, "403");
+							return;
+						}
 
-				// API
-				if ((path + "/").startsWith("/api/")) {
+						// API
+						if ((path + "/").startsWith("/api/")) {
 
-					if (path.equals("/api/log")) {
-						send(e, String.format(
-							"<link rel='stylesheet' href='/log.css'><div class='username'>" + username + "</div><table>%s</table>",
-							settings.lineStorage.stream()
-								.map(t -> String.format(
-									"<tr style=\"color: %s;\"><td class='id'>%s</td><td class='time'>[%s]</td><td class='source'><b>%s</b></td><td class='text'>%s</td></tr>",
-									t.y.source.color,
-									t.x,
-									t.y.time.format(FORMATTER_LOG),
-									t.y.source.name,
-									t.y.text
-										.replaceAll("&", "&amp;")
-										.replaceAll("<", "&lt;")
-										.replaceAll(">", "&gt;")
-										.replaceAll(" ", "&nbsp;")
-										.replaceAll("\n", "<br>")))
-								.collect(Collectors.joining())));
-						return;
-					}
-
-					if (path.equals("/api/log/count")) {
-						send(e, "" + settings.lineStorage.getCount());
-						return;
-					}
-
-					if (path.equals("/api/send")) {
-						String query = e.getRequestURI().getQuery();
-						if (query == null) {
-							send(e, 400, "400");
-						} else {
-
-							logger.log("Access: " + e.getRequestURI() + " " + e.getRemoteAddress());
-							try {
-								receiver.onLine(new Line(new LineSource(source.name + "(" + username + ")", source.color), query));
-							} catch (Exception e2) {
-								logger.log(e2);
+							if (path.equals("/api/log")) {
+								send(e, String.format(
+									"<link rel='stylesheet' href='/log.css'><div class='username'>" + username + "</div><table>%s</table>",
+									setting.lineStorage.stream()
+										.map(t -> String.format(
+											"<tr style=\"color: %s;\"><td class='id'>%s</td><td class='time'>[%s]</td><td class='source'><b>%s</b></td><td class='text'>%s</td></tr>",
+											t.y.source.color,
+											t.x,
+											t.y.time.format(FORMATTER_LOG),
+											t.y.source.name,
+											t.y.text
+												.replaceAll("&", "&amp;")
+												.replaceAll("<", "&lt;")
+												.replaceAll(">", "&gt;")
+												.replaceAll(" ", "&nbsp;")
+												.replaceAll("\n", "<br>")))
+										.collect(Collectors.joining())));
+								return;
 							}
 
-							send(e, "Success[" + query + "]");
+							if (path.equals("/api/log/count")) {
+								send(e, "" + setting.lineStorage.getCount());
+								return;
+							}
+
+							if (path.equals("/api/send")) {
+								String query = e.getRequestURI().getQuery();
+								if (query == null) {
+									send(e, 400, "400");
+								} else {
+
+									logger.log("Access: " + e.getRequestURI() + " " + e.getRemoteAddress());
+									try {
+										receiver.onLine(new Line(new LineSource(source.name + "(" + username + ")", source.color), query));
+									} catch (Exception e2) {
+										logger.log(e2);
+									}
+
+									send(e, "Success[" + query + "]");
+								}
+								return;
+							}
+
+							send(e, 404, "404");
+							return;
 						}
-						return;
-					}
 
-					send(e, 404, "404");
-					return;
-				}
+						// index
+						if (path.endsWith("/")) {
 
-				// index
-				if (path.endsWith("/")) {
+							for (String dir : setting.homeDirectory) {
+								for (String index : setting.indexes) {
+									File file = new File(dir, path.substring(1) + index);
+									if (file.isFile()) {
+										redirect(e, path + index);
+										return;
+									}
+								}
+							}
 
-					for (String dir : settings.homeDirectory) {
-						for (String index : settings.indexes) {
-							File file = new File(dir, path.substring(1) + index);
+							send(e, 404, "404");
+							return;
+						}
+
+						// CGI/ファイル転送
+						for (String dir : setting.homeDirectory) {
+							File file = new File(dir, path.substring(1));
 							if (file.isFile()) {
-								redirect(e, path + index);
-								return;
-							}
-						}
-					}
 
-					send(e, 404, "404");
-					return;
-				}
+								for (CGISetting cgiSetting : setting.cgiSettings) {
+									if (file.getPath().endsWith(cgiSetting.fileNameSuffix)) {
+										new CGIRunner(
+											new CGIServerSetting(
+												setting.port,
+												getServerName() + "/" + getServerVersion(),
+												new File(dir),
+												setting.timeoutMs,
+												new CGIBufferPool(
+													setting.requestBufferSize,
+													setting.responseBufferSize,
+													10,
+													10000)),
+											e,
+											cgiSetting.commandFormat,
+											file,
+											Optional.empty(), // TODO
+											Optional.empty(), // TODO
+											new ILogger() {
+												@Override
+												public void accept(Exception e)
+												{
+													logger.log(e);
+												}
 
-				// CGI/ファイル転送
-				for (String dir : settings.homeDirectory) {
-					File file = new File(dir, path.substring(1));
-					if (file.isFile()) {
+												@Override
+												public void accept(String message)
+												{
+													logger.log(message);
+												}
+											},
+											1000).run();
+										return;
+									}
+								}
 
-						for (CGISetting cgiSetting : settings.cgiSettings) {
-							if (file.getPath().endsWith(cgiSetting.fileNameSuffix)) {
-								new CGISettings(
-									settings.port,
-									getServerName() + "/" + getServerVersion(),
-									new File(dir),
-									cgiSetting.command,
-									settings.timeoutMs,
-									settings.requestBufferSize,
-									settings.responseBufferSize).doCGI(
-										e,
-										file,
-										Optional.empty(), // TODO
-										Optional.empty(), // TODO
-										new ILogger() {
-											@Override
-											public void accept(Exception e)
-											{
-												logger.log(e);
-											}
-
-											@Override
-											public void accept(String message)
-											{
-												logger.log(message);
-											}
-										});
+								sendFile(e, file.toURI().toURL());
 								return;
 							}
 						}
 
-						sendFile(e, file.toURI().toURL());
+						send(e, 404, "404");
+						return;
+					} catch (IOException e1) {
+						try {
+							send(e, 500, "500");
+						} catch (IOException e2) {
+							e2.addSuppressed(e1);
+							e2.printStackTrace();
+						}
 						return;
 					}
-				}
-
-				send(e, 404, "404");
-				return;
+				}).start();
 			});
-			if (settings.needAuthentication) {
+			if (setting.needAuthentication) {
 				context.setAuthenticator(new BasicAuthenticator("Controller") {
 					@Override
 					public boolean checkCredentials(String arg0, String arg1)
 					{
-						if (!settings.basicAuthenticationRegex.isEmpty()) {
+						if (!setting.basicAuthenticationRegex.isEmpty()) {
 							if (!arg0.contains("\n")) {
-								if ((arg0 + "\n" + arg1).matches(settings.basicAuthenticationRegex)) {
+								if ((arg0 + "\n" + arg1).matches(setting.basicAuthenticationRegex)) {
 									return true;
 								}
 							}
@@ -187,7 +205,7 @@ public class BlockWeb extends BlockBase
 		return new Thread(() -> {
 
 			httpServer.start();
-			logger.log("Web server started on http://" + settings.host + ":" + settings.port);
+			logger.log("Web server started on http://" + setting.host + ":" + setting.port);
 
 			while (true) {
 				try {
@@ -262,7 +280,7 @@ public class BlockWeb extends BlockBase
 		return "undefined"; // TODO
 	}
 
-	public static class WebSettings
+	public static class WebSetting
 	{
 
 		public String host;
@@ -286,7 +304,7 @@ public class BlockWeb extends BlockBase
 		{
 
 			public String fileNameSuffix;
-			public ImmutableArray<String> command;
+			public String[] commandFormat;
 
 		}
 
@@ -305,7 +323,7 @@ public class BlockWeb extends BlockBase
 			for (int i = 0; i < strings.length; i++) {
 				cgiSettings[i] = new CGISetting();
 				cgiSettings[i].fileNameSuffix = strings[i].substring(0, strings[i].indexOf(":"));
-				cgiSettings[i].command = new ImmutableArray<>(strings[i].substring(strings[i].indexOf(":") + 1).split(" "));
+				cgiSettings[i].commandFormat = strings[i].substring(strings[i].indexOf(":") + 1).split(" ");
 			}
 			return cgiSettings;
 		}
