@@ -42,6 +42,11 @@ public class BlockWeb extends BlockBase
 	@Override
 	protected Thread createThread() throws Exception
 	{
+		CGIBufferPool cgiBufferPool = new CGIBufferPool(
+			setting.requestBufferSize,
+			setting.responseBufferSize,
+			10,
+			10000);
 
 		// create server
 		HttpServer httpServer = HttpServer.create(new InetSocketAddress(setting.host, setting.port), setting.backlog);
@@ -138,11 +143,7 @@ public class BlockWeb extends BlockBase
 												getServerName() + "/" + getServerVersion(),
 												new File(dir),
 												setting.timeoutMs,
-												new CGIBufferPool(
-													setting.requestBufferSize,
-													setting.responseBufferSize,
-													10,
-													10000)),
+												cgiBufferPool),
 											e,
 											cgiSetting.commandFormat,
 											file,
