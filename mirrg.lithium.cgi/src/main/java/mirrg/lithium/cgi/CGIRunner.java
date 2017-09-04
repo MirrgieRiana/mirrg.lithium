@@ -71,7 +71,7 @@ public class CGIRunner
 				throw HTTPResponse.get(500);
 			}
 		} catch (HTTPResponse httpResponse) {
-			if (httpResponse.isError) httpResponse.printStackTrace();
+			if (httpResponse.isError()) httpResponse.printStackTrace();
 			try {
 				httpResponse.sendResponse(httpExchange);
 			} catch (IOException e) {
