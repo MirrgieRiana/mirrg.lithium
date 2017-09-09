@@ -4,10 +4,12 @@ import static mirrg.lithium.parser.HSyntaxOxygen.*;
 import static org.junit.Assert.*;
 
 import java.util.Hashtable;
+import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 
 import org.junit.Test;
 
+import mirrg.lithium.parser.core.ResultOxygen;
 import mirrg.lithium.parser.core.Syntax;
 import mirrg.lithium.parser.syntaxes.SyntaxOr;
 import mirrg.lithium.parser.syntaxes.SyntaxSlot;
@@ -150,6 +152,25 @@ public class Test1
 		assertEquals(7, f.applyAsDouble("1+2*3"), D);
 		assertEquals(77.9852278869, f.applyAsDouble("15/26*158+41-27*14/7+45/61*5-27/7"), D);
 		assertEquals(512, f.applyAsDouble("2^3^2"), D);
+	}
+
+	@Test
+	public void testName()
+	{
+		Syntax<String> syntaxA = string("A");
+		Syntax<Supplier<String>> syntaxB = named(tunnel((String) null)
+			.extract(syntaxA)
+			.and(string("B")), "B");
+
+		ResultOxygen<Supplier<String>> result = syntaxB.matches("C");
+		String[] tokens = result.getTokenProposal().stream()
+			.map(s -> s.getName())
+			.filter(n -> n != null)
+			.toArray(String[]::new);
+
+		assertEquals(0, result.getTokenProposalIndex());
+		assertEquals(1, tokens.length);
+		assertEquals("B", tokens[0]);
 	}
 
 }

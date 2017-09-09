@@ -50,7 +50,7 @@ public abstract class Syntax<T>
 
 	public String getName()
 	{
-		return null;
+		return name;
 	}
 
 }
