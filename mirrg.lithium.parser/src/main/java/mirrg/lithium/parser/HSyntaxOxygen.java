@@ -8,6 +8,7 @@ import mirrg.lithium.parser.core.Syntax;
 import mirrg.lithium.parser.syntaxes.SyntaxExtract;
 import mirrg.lithium.parser.syntaxes.SyntaxMap;
 import mirrg.lithium.parser.syntaxes.SyntaxNamed;
+import mirrg.lithium.parser.syntaxes.SyntaxOperation;
 import mirrg.lithium.parser.syntaxes.SyntaxOptional;
 import mirrg.lithium.parser.syntaxes.SyntaxOr;
 import mirrg.lithium.parser.syntaxes.SyntaxPack;
@@ -205,6 +206,14 @@ public class HSyntaxOxygen
 	public static <T> SyntaxNamed<T> named(Syntax<T> syntax, String name)
 	{
 		return new SyntaxNamed<>(syntax, name);
+	}
+
+	/**
+	 * 項と演算子によって与えられる二項演算子の列を表します。
+	 */
+	public static <OPERAND, OPERATOR> SyntaxOperation<OPERAND, OPERATOR> operation(Syntax<OPERAND> syntaxOperand, Syntax<OPERATOR> syntaxOperator)
+	{
+		return new SyntaxOperation<>(syntaxOperand, syntaxOperator);
 	}
 
 }

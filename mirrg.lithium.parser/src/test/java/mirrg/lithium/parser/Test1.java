@@ -65,7 +65,7 @@ public class Test1
 		assertEquals(Math.PI, f.applyAsDouble("0+pi"), D);
 	}
 
-	public static Syntax<IFormula> operation(
+	public static Syntax<IFormula> operation2(
 		Syntax<IFormula> syntaxOperand,
 		Syntax<IFunction> syntaxOperator)
 	{
@@ -97,12 +97,12 @@ public class Test1
 			.or(syntaxInteger)
 			.or(syntaxConstant)
 			.or(syntaxBrackets);
-		Syntax<IFormula> syntaxTerm = wrap(operation(
+		Syntax<IFormula> syntaxTerm = wrap(operation2(
 			syntaxFactor,
 			or((IFunction) null)
 				.or(pack(string("*"), s -> (a, b) -> a * b))
 				.or(pack(string("/"), s -> (a, b) -> a / b))));
-		syntaxExpression.setSyntax(wrap(operation(
+		syntaxExpression.setSyntax(wrap(operation2(
 			syntaxTerm,
 			or((IFunction) null)
 				.or(pack(string("+"), s -> (a, b) -> a + b))
@@ -119,6 +119,37 @@ public class Test1
 
 		assertEquals(77.9852278869, f.applyAsDouble("15/26*158+41-27*14/7+45/61*5-27/7"), D);
 		assertEquals(-3.85706255112, f.applyAsDouble("15/(26*158+41-27)*(14/(7+45)/61)*5-27/7"), D);
+	}
+
+	@Test
+	public void test4()
+	{
+		Syntax<IFormula> syntaxInteger = pack(regex("\\d+"),
+			s -> new FormulaLiteral(Integer.parseInt(s, 10)));
+		Syntax<IFormula> syntaxPower = pack(operation(
+			syntaxInteger,
+			or((IFunction) null)
+				.or(pack(string("^"), s -> (a, b) -> Math.pow(a, b)))),
+			o -> o.calculateRight((left, operator, right) -> () -> operator.apply(left.calculate(), right.calculate())));
+		Syntax<IFormula> syntaxTerm = pack(operation(
+			syntaxPower,
+			or((IFunction) null)
+				.or(pack(string("*"), s -> (a, b) -> a * b))
+				.or(pack(string("/"), s -> (a, b) -> a / b))),
+			o -> o.calculateLeft((left, operator, right) -> () -> operator.apply(left.calculate(), right.calculate())));
+		Syntax<IFormula> syntaxExpression = pack(operation(
+			syntaxTerm,
+			or((IFunction) null)
+				.or(pack(string("+"), s -> (a, b) -> a + b))
+				.or(pack(string("-"), s -> (a, b) -> a - b))),
+			o -> o.calculateLeft((left, operator, right) -> () -> operator.apply(left.calculate(), right.calculate())));
+
+		ToDoubleFunction<String> f = src -> syntaxExpression.parse(src).value.calculate();
+
+		assertEquals(3, f.applyAsDouble("1+1+1"), D);
+		assertEquals(7, f.applyAsDouble("1+2*3"), D);
+		assertEquals(77.9852278869, f.applyAsDouble("15/26*158+41-27*14/7+45/61*5-27/7"), D);
+		assertEquals(512, f.applyAsDouble("2^3^2"), D);
 	}
 
 }
