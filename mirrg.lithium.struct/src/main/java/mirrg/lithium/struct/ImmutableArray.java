@@ -2,6 +2,7 @@ package mirrg.lithium.struct;
 
 import java.util.Enumeration;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public final class ImmutableArray<T>
@@ -62,6 +63,13 @@ public final class ImmutableArray<T>
 	public Stream<T> stream()
 	{
 		return Stream.of(array);
+	}
+
+	public void forEach(Consumer<T> consumer)
+	{
+		for (int i = 0; i < array.length; i++) {
+			consumer.accept(array[i]);
+		}
 	}
 
 	@Override
