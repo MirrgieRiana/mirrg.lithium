@@ -141,6 +141,7 @@ public class CGIRouter
 
 	public Optional<ICGIPattern> isCGI(File file)
 	{
+		if (!file.exists()) return Optional.empty();
 		for (ICGIPattern cgiPattern : cgiPatterns) {
 			if (cgiPattern.isCGIScript(file)) {
 				return Optional.of(cgiPattern);
