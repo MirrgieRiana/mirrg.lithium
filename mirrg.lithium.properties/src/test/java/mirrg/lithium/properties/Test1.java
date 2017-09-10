@@ -7,6 +7,8 @@ import java.io.FileNotFoundException;
 
 import org.junit.Test;
 
+import net.arnx.jsonic.JSON;
+
 public class Test1
 {
 
@@ -49,12 +51,50 @@ public class Test1
 	}
 
 	@Test
+	public void test3() throws Exception
+	{
+		File file = new File("test3.properties");
+		IProperties properties = HPropertiesParser.parse(file, System.err::println);
+
+		assertFalse(properties.get("a").getString().isPresent());
+		assertEquals(1, (int) properties.get("a.a").getInteger().get());
+		assertEquals(2, (int) properties.get("a.b").getInteger().get());
+		assertEquals("{a:2,b:[4,5,6]}", properties.get("b").getString().get().replaceAll("\\s", ""));
+		assertEquals("{a:${a.b},b:[4,5,6]}", properties.get("c").getString().get().replaceAll("\\s", ""));
+		assertEquals("{a=2}", properties.get("d").getString().get().replaceAll("\\s", ""));
+		assertEquals("{a=${a.b}}", properties.get("e").getString().get().replaceAll("\\s", ""));
+
+		{
+			String json = properties.get("f").getString().get();
+
+			ClassA a = JSON.decode(json, ClassA.class);
+
+			assertEquals(2, a.a.a);
+			assertEquals(3, a.a.b.length);
+			assertEquals(4, a.a.b[0]);
+			assertEquals(5, a.a.b[1]);
+			assertEquals(6, a.a.b[2]);
+		}
+	}
+
+	public static class ClassA
+	{
+		public ClassB a;
+	}
+
+	public static class ClassB
+	{
+		public int a;
+		public int[] b;
+	}
+
+	@Test
 	public void test_exception_message() throws FileNotFoundException
 	{
 		int[] count = new int[1];
 		HPropertiesParser.parse(new File("test_exception.properties"), e -> {
 			if (e instanceof SyntaxException) {
-				assertEquals("Syntax error at test_exception.properties (R:2 C:4)\nasd\n   ^", e.getMessage());
+				assertEquals("Syntax error at test_exception.properties (R:2 C:4)\nasd\n   ^\nExpected: =, whitespace, {", e.getMessage());
 			} else {
 				fail();
 			}
