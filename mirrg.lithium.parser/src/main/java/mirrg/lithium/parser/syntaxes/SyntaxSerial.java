@@ -21,9 +21,10 @@ public class SyntaxSerial<T> extends Syntax<T>
 		this.supplier = supplier;
 	}
 
-	public <T2> SyntaxSerial<T> and(Syntax<T2> syntax)
+	public SyntaxSerial<T> and(Syntax<?> syntax)
 	{
-		return and(syntax, (t, t2) -> {});
+		syntaxes.add(t -> syntax);
+		return this;
 	}
 
 	@SuppressWarnings("deprecation")
@@ -31,6 +32,22 @@ public class SyntaxSerial<T> extends Syntax<T>
 	{
 		syntaxes.add(t -> HSyntaxOxygen.map(syntax, t2 -> {
 			function.accept(t, t2);
+			return t2;
+		}));
+		return this;
+	}
+
+	public SyntaxSerial<T> and(Function<T, Syntax<?>> function)
+	{
+		syntaxes.add(function);
+		return this;
+	}
+
+	@SuppressWarnings("deprecation")
+	public <T2> SyntaxSerial<T> and(Function<T, Syntax<T2>> function, BiConsumer<T, T2> function2)
+	{
+		syntaxes.add(t -> HSyntaxOxygen.map(function.apply(t), t2 -> {
+			function2.accept(t, t2);
 			return t2;
 		}));
 		return this;

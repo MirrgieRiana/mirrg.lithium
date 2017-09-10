@@ -8,10 +8,12 @@ import mirrg.lithium.parser.core.Syntax;
 import mirrg.lithium.parser.syntaxes.SyntaxExtract;
 import mirrg.lithium.parser.syntaxes.SyntaxMap;
 import mirrg.lithium.parser.syntaxes.SyntaxNamed;
+import mirrg.lithium.parser.syntaxes.SyntaxNegativeLookahead;
 import mirrg.lithium.parser.syntaxes.SyntaxOperation;
 import mirrg.lithium.parser.syntaxes.SyntaxOptional;
 import mirrg.lithium.parser.syntaxes.SyntaxOr;
 import mirrg.lithium.parser.syntaxes.SyntaxPack;
+import mirrg.lithium.parser.syntaxes.SyntaxPositiveLookahead;
 import mirrg.lithium.parser.syntaxes.SyntaxRegex;
 import mirrg.lithium.parser.syntaxes.SyntaxRepeat;
 import mirrg.lithium.parser.syntaxes.SyntaxSerial;
@@ -214,6 +216,22 @@ public class HSyntaxOxygen
 	public static <OPERAND, OPERATOR> SyntaxOperation<OPERAND, OPERATOR> operation(Syntax<OPERAND> syntaxOperand, Syntax<OPERATOR> syntaxOperator)
 	{
 		return new SyntaxOperation<>(syntaxOperand, syntaxOperator);
+	}
+
+	/**
+	 * 肯定先読みを行います。
+	 */
+	public static <T> SyntaxPositiveLookahead<T> positive(Syntax<T> syntax)
+	{
+		return new SyntaxPositiveLookahead<>(syntax);
+	}
+
+	/**
+	 * 否定先読みを行います。
+	 */
+	public static SyntaxNegativeLookahead negative(Syntax<?> syntax)
+	{
+		return new SyntaxNegativeLookahead(syntax);
 	}
 
 }

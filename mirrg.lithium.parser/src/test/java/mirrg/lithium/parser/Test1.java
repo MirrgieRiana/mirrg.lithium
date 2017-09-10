@@ -3,9 +3,13 @@ package mirrg.lithium.parser;
 import static mirrg.lithium.parser.HSyntaxOxygen.*;
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
+import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -171,6 +175,41 @@ public class Test1
 		assertEquals(0, result.getTokenProposalIndex());
 		assertEquals(1, tokens.length);
 		assertEquals("B", tokens[0]);
+	}
+
+	@Test
+	public void testDeliter()
+	{
+		{
+			Syntax<Integer> syntax = pack(serial(Struct2<String, ArrayList<String>>::new)
+				.and(regex("."), Struct2::setX)
+				.and(t -> repeat(string(t.x)), Struct2::setY),
+				t -> 1 + t.y.size());
+
+			ToIntFunction<String> f = src -> syntax.parse(src).value;
+
+			assertEquals(3, f.applyAsInt("///"));
+			assertEquals(7, f.applyAsInt("???????"));
+			assertEquals(1, f.applyAsInt("a"));
+		}
+		{
+			Syntax<String> syntax = pack(serial(Struct2<String, ArrayList<Supplier<String>>>::new)
+				.and(regex("."), Struct2::setX)
+				.and(t -> repeat(tunnel((String) null)
+					.and(negative(string(t.x)))
+					.extract(regex("."))), Struct2::setY)
+				.and(t -> string(t.x)),
+				t -> t.y.stream()
+					.map(Supplier::get)
+					.collect(Collectors.joining()));
+
+			Function<String, String> f = src -> syntax.parse(src).value;
+
+			assertEquals("abc", f.apply("/abc/"));
+			assertEquals("", f.apply("??"));
+			assertEquals("k", f.apply(".k."));
+			assertEquals("io", f.apply("(io("));
+		}
 	}
 
 }
