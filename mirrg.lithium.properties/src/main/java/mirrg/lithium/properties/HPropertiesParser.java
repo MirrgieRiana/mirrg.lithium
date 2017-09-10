@@ -244,26 +244,36 @@ public class HPropertiesParser
 		.and(method, Struct2::setY),
 		t -> vm -> vm.putProperty(t.x, t.y.apply(vm)));
 
-	public static Syntax<Consumer<VM>> lineGroup = pack(serial(Struct2<String, Consumer<VM>>::new)
-		.and(__)
-		.and(propertyName, Struct2::setX)
-		.and(__)
-		.and(string("{"))
-		.and(__)
-		.and(named(string("\n"), "linebreak"))
-		.and(__)
-		.and(innerLines, Struct2::setY)
-		.and(__)
-		.and(named(string("\n"), "linebreak"))
-		.and(__)
-		.and(string("}"))
-		.and(__),
-		t -> vm -> {
-			String prefix = vm.prefix;
-			vm.prefix += t.x + ".";
-			t.y.accept(vm);
-			vm.prefix = prefix;
-		});
+	public static Syntax<Consumer<VM>> lineGroup = or((Consumer<VM>) null)
+		.or(pack(serial(Struct2<String, Consumer<VM>>::new)
+			.and(__)
+			.and(propertyName, Struct2::setX)
+			.and(__)
+			.and(string("{"))
+			.and(__)
+			.and(named(string("\n"), "linebreak"))
+			.and(innerLines, Struct2::setY)
+			.and(named(string("\n"), "linebreak"))
+			.and(__)
+			.and(string("}"))
+			.and(__),
+			t -> vm -> {
+				String prefix = vm.prefix;
+				vm.prefix += t.x + ".";
+				t.y.accept(vm);
+				vm.prefix = prefix;
+			}))
+		.or(pack(serial(() -> null)
+			.and(__)
+			.and(propertyName)
+			.and(__)
+			.and(string("{"))
+			.and(__)
+			.and(named(string("\n"), "linebreak"))
+			.and(__)
+			.and(string("}"))
+			.and(__),
+			t -> vm -> {}));
 
 	public static Syntax<Consumer<VM>> lineComment = pack(serial(() -> null)
 		.and(__)

@@ -80,6 +80,8 @@ public class Test1
 		assertEquals(1, (int) properties.get("g.a.a").getInteger().get());
 		assertEquals(2, (int) properties.get("g.a.b").getInteger().get());
 		assertEquals(3, (int) properties.get("g.b").getInteger().get());
+
+		assertEquals("10", properties.get("i.a").getString().get().replaceAll("\\s", ""));
 	}
 
 	public static class ClassA
