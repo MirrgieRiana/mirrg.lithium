@@ -19,34 +19,34 @@ public abstract class HTTPResponse extends Throwable
 
 	public abstract boolean isError();
 
-	public static HTTPResponse get(File file)
+	public static HTTPResponseSendFile get(File file)
 	{
-		return new HTTPResponseImpl(false, httpExchange -> sendFile(httpExchange, file));
+		return new HTTPResponseSendFile(file);
 	}
 
-	public static HTTPResponse get(int code)
+	public static HTTPResponseBytes get(int code)
 	{
 		return get(code, "" + code);
 	}
 
-	public static HTTPResponse get(int code, String text)
+	public static HTTPResponseBytes get(int code, String text)
 	{
 		return get(code, text.getBytes());
 	}
 
-	public static HTTPResponse get(int code, byte[] bytes)
+	public static HTTPResponseBytes get(int code, byte[] bytes)
 	{
 		return get(code, bytes, 0, bytes.length);
 	}
 
-	public static HTTPResponse get(int code, byte[] bytes, int start, int length)
+	public static HTTPResponseBytes get(int code, byte[] bytes, int start, int length)
 	{
 		return get(code >= 400 && code < 600, code, bytes, start, length);
 	}
 
-	public static HTTPResponse get(boolean isError, int code, byte[] bytes, int start, int length)
+	public static HTTPResponseBytes get(boolean isError, int code, byte[] bytes, int start, int length)
 	{
-		return new HTTPResponseImpl(isError, httpExchange -> send(httpExchange, code, bytes, start, length));
+		return new HTTPResponseBytes(isError, code, bytes, start, length);
 	}
 
 	//
