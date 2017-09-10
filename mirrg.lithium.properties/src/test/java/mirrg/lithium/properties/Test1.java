@@ -75,6 +75,11 @@ public class Test1
 			assertEquals(5, a.a.b[1]);
 			assertEquals(6, a.a.b[2]);
 		}
+
+		assertEquals(0, (int) properties.get("g.a").getInteger().get());
+		assertEquals(1, (int) properties.get("g.a.a").getInteger().get());
+		assertEquals(2, (int) properties.get("g.a.b").getInteger().get());
+		assertEquals(3, (int) properties.get("g.b").getInteger().get());
 	}
 
 	public static class ClassA
