@@ -6,7 +6,9 @@ import java.net.InetSocketAddress;
 
 import com.sun.net.httpserver.HttpServer;
 
-import mirrg.lithium.cgi.CGIRouter.EnumRouteResult;
+import mirrg.lithium.cgi.routing.CGIPattern;
+import mirrg.lithium.cgi.routing.CGIRouter;
+import mirrg.lithium.cgi.routing.CGIRouter.EnumRouteResult;
 import mirrg.lithium.struct.Struct1;
 import mirrg.lithium.struct.Tuple;
 

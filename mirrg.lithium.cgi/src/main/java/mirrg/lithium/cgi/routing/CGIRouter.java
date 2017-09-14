@@ -1,9 +1,11 @@
-package mirrg.lithium.cgi;
+package mirrg.lithium.cgi.routing;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Optional;
 
+import mirrg.lithium.cgi.CGIServerSetting;
+import mirrg.lithium.cgi.HTTPResponse;
 import mirrg.lithium.struct.Tuple;
 
 public class CGIRouter

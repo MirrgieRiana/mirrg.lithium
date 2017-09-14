@@ -1,6 +1,9 @@
-package mirrg.lithium.cgi;
+package mirrg.lithium.cgi.routing;
 
 import java.io.File;
+
+import mirrg.lithium.cgi.CGIServerSetting;
+import mirrg.lithium.cgi.HTTPResponse;
 
 public interface ICGIPattern
 {
