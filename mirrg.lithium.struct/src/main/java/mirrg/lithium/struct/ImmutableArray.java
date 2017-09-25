@@ -1,8 +1,11 @@
 package mirrg.lithium.struct;
 
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public final class ImmutableArray<T>
@@ -39,6 +42,22 @@ public final class ImmutableArray<T>
 	public T get(int index)
 	{
 		return array[index];
+	}
+
+	public T[] toArray(IntFunction<T[]> arraySupplier)
+	{
+		T[] array2 = arraySupplier.apply(array.length);
+		System.arraycopy(array, 0, array2, 0, array.length);
+		return array2;
+	}
+
+	public <C extends Collection<T>> C toCollection(Supplier<C> collectionFactory)
+	{
+		C collection = collectionFactory.get();
+		for (int i = 0; i < array.length; i++) {
+			collection.add(array[i]);
+		}
+		return collection;
 	}
 
 	public Enumeration<T> values()

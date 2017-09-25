@@ -103,6 +103,18 @@ public class TestImmutableArray
 		assertEquals(array6.get(1), list3.get(1));
 		assertEquals(array6.get(2), list3.get(2));
 
+		String[] array7 = new ImmutableArray<String>("a", "b", "c").toArray(String[]::new);
+		assertEquals(array7.length, 3);
+		assertEquals(array7[0], "a");
+		assertEquals(array7[1], "b");
+		assertEquals(array7[2], "c");
+
+		ArrayList<String> array8 = new ImmutableArray<>("a", "b", "c").toCollection(ArrayList::new);
+		assertEquals(array8.size(), 3);
+		assertEquals(array8.get(0), "a");
+		assertEquals(array8.get(1), "b");
+		assertEquals(array8.get(2), "c");
+
 	}
 
 }
