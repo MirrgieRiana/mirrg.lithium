@@ -51,16 +51,12 @@ public class HNumber
 	 */
 	public static int contains(int value, int min, int max)
 	{
-		if (min > max)
-			return contains(value, max, min);
+		if (min > max) return contains(value, max, min);
 
-		if (value == min)
-			return 1;
-		if (value == max)
-			return 1;
+		if (value == min) return 1;
+		if (value == max) return 1;
 
-		if (value > min && value < max)
-			return 1;
+		if (value > min && value < max) return 1;
 
 		return 0;
 	}
@@ -70,36 +66,28 @@ public class HNumber
 	 */
 	public static int contains(double value, double min, double max)
 	{
-		if (min > max)
-			return contains(value, max, min);
+		if (min > max) return contains(value, max, min);
 
-		if (value == min)
-			return 1;
-		if (value == max)
-			return 1;
+		if (value == min) return 1;
+		if (value == max) return 1;
 
-		if (value > min && value < max)
-			return 1;
+		if (value > min && value < max) return 1;
 
 		return 0;
 	}
 
 	public static int contains(int valueX, int valueY, int minX, int maxX, int minY, int maxY)
 	{
-		if (minX > maxX)
-			return contains(valueX, valueY, maxX, minX, minY, maxY);
-		if (minY > maxY)
-			return contains(valueX, valueY, minX, maxX, maxY, minY);
+		if (minX > maxX) return contains(valueX, valueY, maxX, minX, minY, maxY);
+		if (minY > maxY) return contains(valueX, valueY, minX, maxX, maxY, minY);
 
 		return Math.min(contains(valueX, minX, maxX), contains(valueY, minY, maxY));
 	}
 
 	public static int contains(double valueX, double valueY, double minX, double maxX, double minY, double maxY)
 	{
-		if (minX > maxX)
-			return contains(valueX, valueY, maxX, minX, minY, maxY);
-		if (minY > maxY)
-			return contains(valueX, valueY, minX, maxX, maxY, minY);
+		if (minX > maxX) return contains(valueX, valueY, maxX, minX, minY, maxY);
+		if (minY > maxY) return contains(valueX, valueY, minX, maxX, maxY, minY);
 
 		return Math.min(contains(valueX, minX, maxX), contains(valueY, minY, maxY));
 	}
@@ -109,10 +97,8 @@ public class HNumber
 	 */
 	public static int compare(double a, double b)
 	{
-		if (a < b)
-			return -1;
-		if (a > b)
-			return 1;
+		if (a < b) return -1;
+		if (a > b) return 1;
 		return 0;
 	}
 
