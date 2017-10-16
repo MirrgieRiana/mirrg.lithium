@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
 
-project.group = 'mirrg'
+project.group = 'mirrg.lithium'
 project.archivesBaseName = 'mirrg.lithium.objectduct'
 version = '0.0.1'
 
