@@ -38,17 +38,7 @@ public abstract class ObjectductThreaded<T> extends Objectduct
 	{
 		synchronized (lock) {
 			if (thread == null) {
-				thread = new Thread(() -> {
-					try {
-						runImpl();
-					} catch (InterruptedException e) {
-
-					} finally {
-						synchronized (lock) {
-							thread = null;
-						}
-					}
-				}, getThreadName());
+				thread = createThread();
 				thread.start();
 			}
 		}
@@ -57,6 +47,24 @@ public abstract class ObjectductThreaded<T> extends Objectduct
 	protected String getThreadName()
 	{
 		return getClass().getSimpleName();
+	}
+
+	protected Thread createThread()
+	{
+		return new Thread(this::run, getThreadName());
+	}
+
+	protected void run()
+	{
+		try {
+			runImpl();
+		} catch (InterruptedException e) {
+
+		} finally {
+			synchronized (lock) {
+				thread = null;
+			}
+		}
 	}
 
 	protected abstract void runImpl() throws InterruptedException;
