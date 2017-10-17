@@ -20,6 +20,13 @@ public abstract class ObjectductThreaded<T> extends Objectduct
 		up();
 	}
 
+	@Override
+	public void stop() throws Exception
+	{
+		super.stop();
+		down();
+	}
+
 	/**
 	 * オートメーションが実行中でない場合、オートメーションを開始します。
 	 */

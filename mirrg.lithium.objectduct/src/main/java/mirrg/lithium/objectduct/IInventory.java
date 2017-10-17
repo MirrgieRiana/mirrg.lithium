@@ -11,8 +11,14 @@ public interface IInventory
 
 	/**
 	 * このインベントリのオートメーション動作を開始します。
+	 * {@link #stop()} された後に再び呼び出すことはできません。
 	 */
 	public void start() throws Exception;
+
+	/**
+	 * このインベントリのオートメーション動作を終了します。
+	 */
+	public void stop() throws Exception;
 
 	/**
 	 * このインベントリのオートメーション動作を行うスレッドが終了するまで待機します。

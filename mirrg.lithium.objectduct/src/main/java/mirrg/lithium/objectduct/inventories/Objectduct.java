@@ -37,6 +37,14 @@ public abstract class Objectduct implements IInventory
 	}
 
 	@Override
+	public void stop() throws Exception
+	{
+		for (IInventory inventory : inventories) {
+			inventory.stop();
+		}
+	}
+
+	@Override
 	public void join() throws InterruptedException
 	{
 		for (IInventory inventory : inventories) {
