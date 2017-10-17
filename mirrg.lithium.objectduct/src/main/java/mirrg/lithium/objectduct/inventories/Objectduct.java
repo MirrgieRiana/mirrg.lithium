@@ -37,7 +37,7 @@ public abstract class Objectduct implements IInventory
 	}
 
 	@Override
-	public void stop() throws Exception
+	public void stop()
 	{
 		for (IInventory inventory : inventories) {
 			inventory.stop();

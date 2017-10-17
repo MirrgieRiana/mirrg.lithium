@@ -18,7 +18,7 @@ public interface IInventory
 	/**
 	 * このインベントリのオートメーション動作を終了します。
 	 */
-	public void stop() throws Exception;
+	public void stop();
 
 	/**
 	 * このインベントリのオートメーション動作を行うスレッドが終了するまで待機します。

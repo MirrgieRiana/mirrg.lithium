@@ -21,10 +21,14 @@ public abstract class ObjectductThreaded<T> extends Objectduct
 	}
 
 	@Override
-	public void stop() throws Exception
+	public void stop()
 	{
 		super.stop();
-		down();
+		try {
+			down();
+		} catch (InterruptedException e) {
+
+		}
 	}
 
 	/**
