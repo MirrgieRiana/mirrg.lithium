@@ -10,7 +10,7 @@ import mirrg.lithium.objectduct.TerminalClosedException;
  * 入力されたオブジェクトを一旦決められた最大容量のバッファに保管し、
  * ディスパッチスレッドにより自動的にオブジェクトを出力するインベントリです。
  */
-public class Hopper<T> extends ObjectductThreaded<T>
+public class Hopper<T> extends ObjectductThreaded
 {
 
 	private int bufferSize;

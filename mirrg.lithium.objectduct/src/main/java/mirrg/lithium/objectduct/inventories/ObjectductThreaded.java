@@ -5,7 +5,7 @@ package mirrg.lithium.objectduct.inventories;
  * 入力されたオブジェクトを一旦決められた最大容量のバッファに保管し、
  * ディスパッチスレッドにより自動的にオブジェクトを出力するインベントリです。
  */
-public abstract class ObjectductThreaded<T> extends Objectduct
+public abstract class ObjectductThreaded extends Objectduct
 {
 
 	private Object lock = new Object();
