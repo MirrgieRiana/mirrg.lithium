@@ -6,6 +6,7 @@ import java.util.ArrayDeque;
 import java.util.function.Consumer;
 
 import javax.swing.JTextPane;
+import javax.swing.SwingUtilities;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
@@ -88,6 +89,9 @@ public class LoggerTextPane extends JTextPane implements ILogger
 		println(string, style);
 	}
 
+	/**
+	 * このメソッドはどのスレッドからでも呼び出すことができます。
+	 */
 	public void println(String string, Color foreColor)
 	{
 		println(string, a -> {
@@ -95,6 +99,9 @@ public class LoggerTextPane extends JTextPane implements ILogger
 		});
 	}
 
+	/**
+	 * このメソッドはどのスレッドからでも呼び出すことができます。
+	 */
 	public void println(String string, Color foreColor, Color backColor)
 	{
 		println(string, a -> {
@@ -103,6 +110,9 @@ public class LoggerTextPane extends JTextPane implements ILogger
 		});
 	}
 
+	/**
+	 * このメソッドはどのスレッドからでも呼び出すことができます。
+	 */
 	public void println(String string, Consumer<SimpleAttributeSet> styleSetter)
 	{
 		SimpleAttributeSet attributeSet = new SimpleAttributeSet();
@@ -110,11 +120,17 @@ public class LoggerTextPane extends JTextPane implements ILogger
 		println(string, attributeSet);
 	}
 
+	/**
+	 * このメソッドはどのスレッドからでも呼び出すことができます。
+	 */
 	public void println(String string)
 	{
 		println(string, (AttributeSet) null);
 	}
 
+	/**
+	 * このメソッドはどのスレッドからでも呼び出すことができます。
+	 */
 	public void println(String string, AttributeSet attributeSet)
 	{
 		for (String string2 : string.split("\\r\\n|\\r|\\n")) {
@@ -128,17 +144,19 @@ public class LoggerTextPane extends JTextPane implements ILogger
 
 	private void printlnImpl(String line, AttributeSet attributeSet)
 	{
-		try {
-			lineLengths.addLast(line.length());
-			document.insertString(document.getLength(), line + "\n", attributeSet);
+		SwingUtilities.invokeLater(() -> {
+			try {
+				lineLengths.addLast(line.length());
+				document.insertString(document.getLength(), line + "\n", attributeSet);
 
-			while (lineLengths.size() > maxLines) {
-				int length = lineLengths.removeFirst();
-				document.remove(0, length + 1);
+				while (lineLengths.size() > maxLines) {
+					int length = lineLengths.removeFirst();
+					document.remove(0, length + 1);
+				}
+			} catch (BadLocationException e) {
+				e.printStackTrace();
 			}
-		} catch (BadLocationException e) {
-			e.printStackTrace();
-		}
+		});
 	}
 
 }
