@@ -57,6 +57,9 @@ public class LoggerTextPane extends JTextPane implements ILogger
 		StyleConstants.setForeground(STYLE_TRACE, Color.decode("#aaaaaa"));
 	}
 
+	/**
+	 * このメソッドはどのスレッドからでも呼び出すことができます。
+	 */
 	@Override
 	public void println(String string, EnumLogLevel logLevel)
 	{
