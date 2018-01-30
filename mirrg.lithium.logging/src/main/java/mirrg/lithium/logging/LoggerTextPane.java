@@ -63,10 +63,6 @@ public class LoggerTextPane extends JTextPane implements ILogger
 	@Override
 	public void println(String string, EnumLogLevel logLevel)
 	{
-		string = String.format("%-7s %s" + System.lineSeparator(),
-			"[" + logLevel.name() + "]",
-			string);
-
 		Style style = null;
 		switch (logLevel) {
 			case FATAL:
@@ -89,7 +85,7 @@ public class LoggerTextPane extends JTextPane implements ILogger
 				break;
 		}
 
-		println(string, style);
+		println(LoggingUtil.INSTANCE.format(string, logLevel), style);
 	}
 
 	/**

@@ -28,17 +28,17 @@ public class TestLogger
 		logger.info("004");
 		logger.debug("005");
 		logger.trace("006");
-		assertEquals(""
-			+ "[FATAL] 001" + System.lineSeparator()
-			+ "[ERROR] 002" + System.lineSeparator()
-			+ "[WARN]  003" + System.lineSeparator()
-			+ "[INFO]  004" + System.lineSeparator()
-			+ "[DEBUG] 005" + System.lineSeparator()
-			+ "[TRACE] 006" + System.lineSeparator(), out.toString());
+		assertTrue(out.toString().matches(""
+			+ ".{23} \\[FATAL] 001" + System.lineSeparator()
+			+ ".{23} \\[ERROR] 002" + System.lineSeparator()
+			+ ".{23} \\[WARN]  003" + System.lineSeparator()
+			+ ".{23} \\[INFO]  004" + System.lineSeparator()
+			+ ".{23} \\[DEBUG] 005" + System.lineSeparator()
+			+ ".{23} \\[TRACE] 006" + System.lineSeparator()));
 	}
 
 	@Test
-	public void test_LoggerTetPane() throws Exception
+	public void test_LoggerTextPane() throws Exception
 	{
 		JFrame frame = new JFrame();
 		frame.setLayout(new CardLayout());
@@ -56,20 +56,22 @@ public class TestLogger
 		JScrollPane scrollPane = new JScrollPane(logger);
 		scrollPane.setPreferredSize(new Dimension(300, 200));
 		frame.add(scrollPane);
+		Thread.sleep(1000);
 		frame.pack();
 		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		frame.setLocationByPlatform(true);
 		frame.setVisible(true);
-		assertEquals(""
-			+ "[FATAL] 001" + System.lineSeparator()
-			+ "[FATAL] 001" + System.lineSeparator()
-			+ "[FATAL] 001" + System.lineSeparator()
-			+ "[ERROR] 002" + System.lineSeparator()
-			+ "[WARN]  003" + System.lineSeparator()
-			+ "[INFO]  004" + System.lineSeparator()
-			+ "[DEBUG] 005" + System.lineSeparator()
-			+ "[TRACE] 006" + System.lineSeparator(), logger.getText());
+		assertTrue(logger.getText().matches(""
+			+ ".{23} \\[FATAL] 001" + System.lineSeparator()
+			+ ".{23} \\[FATAL] 001" + System.lineSeparator()
+			+ ".{23} \\[FATAL] 001" + System.lineSeparator()
+			+ ".{23} \\[ERROR] 002" + System.lineSeparator()
+			+ ".{23} \\[WARN]  003" + System.lineSeparator()
+			+ ".{23} \\[INFO]  004" + System.lineSeparator()
+			+ ".{23} \\[DEBUG] 005" + System.lineSeparator()
+			+ ".{23} \\[TRACE] 006" + System.lineSeparator()));
 		Thread.sleep(1000);
+		frame.dispose();
 	}
 
 }

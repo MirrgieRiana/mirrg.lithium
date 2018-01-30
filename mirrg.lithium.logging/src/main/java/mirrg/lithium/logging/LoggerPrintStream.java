@@ -15,9 +15,7 @@ public class LoggerPrintStream implements ILogger
 	@Override
 	public void println(String string, EnumLogLevel logLevel)
 	{
-		out.println(String.format("%-7s %s",
-			"[" + logLevel.name() + "]",
-			string));
+		out.println(LoggingUtil.INSTANCE.format(string, logLevel));
 	}
 
 }
