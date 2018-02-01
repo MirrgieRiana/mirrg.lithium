@@ -1,12 +1,13 @@
 package mirrg.lithium.swing.util;
 
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
@@ -19,12 +20,17 @@ import java.util.stream.Stream;
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.JTextComponent;
@@ -97,6 +103,18 @@ public class HSwing
 			createSplitPaneHorizontal(components.subList(1, components.size())));
 	}
 
+	public static JSplitPane createSplitPaneHorizontal(Component c1, Component c2)
+	{
+		return new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, c1, c2);
+	}
+
+	public static JSplitPane createSplitPaneHorizontal(double resizeWeight, Component c1, Component c2)
+	{
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, c1, c2);
+		splitPane.setResizeWeight(resizeWeight);
+		return splitPane;
+	}
+
 	public static Component createSplitPaneVertical(Component... components)
 	{
 		return createSplitPaneVertical(Arrays.asList(components));
@@ -108,6 +126,18 @@ public class HSwing
 		return new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
 			components.get(0),
 			createSplitPaneVertical(components.subList(1, components.size())));
+	}
+
+	public static JSplitPane createSplitPaneVertical(Component c1, Component c2)
+	{
+		return new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, c1, c2);
+	}
+
+	public static JSplitPane createSplitPaneVertical(double resizeWeight, Component c1, Component c2)
+	{
+		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, c1, c2);
+		splitPane.setResizeWeight(resizeWeight);
+		return splitPane;
 	}
 
 	public static Component createBorderPanelUp(Component... components)
@@ -236,6 +266,14 @@ public class HSwing
 		return panel;
 	}
 
+	public static JPanel createMargin(int margin, Component component)
+	{
+		return process(createPanel(component), c -> {
+			c.setLayout(new CardLayout());
+			c.setBorder(new EmptyBorder(margin, margin, margin, margin));
+		});
+	}
+
 	public static JButton createButton(String caption, ActionListener listener)
 	{
 		JButton button = new JButton(caption);
@@ -254,6 +292,31 @@ public class HSwing
 		JScrollPane scrollPane = new JScrollPane(component);
 		scrollPane.setPreferredSize(new Dimension(width, height));
 		return scrollPane;
+	}
+
+	public static JMenuBar createJMenuBar(Component... components)
+	{
+		JMenuBar menuBar = new JMenuBar();
+		for (Component component : components) {
+			menuBar.add(component);
+		}
+		return menuBar;
+	}
+
+	public static JMenu createJMenu(String text, Component... components)
+	{
+		JMenu menu = new JMenu(text);
+		for (Component component : components) {
+			menu.add(component);
+		}
+		return menu;
+	}
+
+	public static JMenuItem createJMenuItem(String text, ActionListener actionListener)
+	{
+		JMenuItem menuItem = new JMenuItem(text);
+		menuItem.addActionListener(actionListener);
+		return menuItem;
 	}
 
 	public static <T> T process(T object, Consumer<T> consumer)
@@ -285,34 +348,15 @@ public class HSwing
 		return component;
 	}
 
+	public static <T extends JComponent> T setToolTipText(T component, String string)
+	{
+		component.setToolTipText(string);
+		return component;
+	}
+
 	public static <T extends Component> T hookRightClick(T component, Predicate<MouseEvent> listener)
 	{
-		component.addMouseListener(new MouseListener() {
-
-			@Override
-			public void mouseReleased(MouseEvent e)
-			{
-
-			}
-
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-
-			}
-
+		component.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e)
 			{
@@ -320,15 +364,13 @@ public class HSwing
 					if (listener.test(e)) e.consume();
 				}
 			}
-
 		});
 		return component;
 	}
 
 	public static <T extends Component> T hookPopup(T component, Predicate<MouseEvent> listener)
 	{
-		component.addMouseListener(new MouseListener() {
-
+		component.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseReleased(MouseEvent e)
 			{
@@ -344,25 +386,6 @@ public class HSwing
 					if (listener.test(e)) e.consume();
 				}
 			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-
-			}
-
-			@Override
-			public void mouseClicked(MouseEvent e)
-			{
-
-			}
-
 		});
 		return component;
 	}
@@ -395,8 +418,7 @@ public class HSwing
 
 	public static <T extends Component> T hookDoubleClick(T component, Consumer<MouseEvent> listener)
 	{
-		component.addMouseListener(new MouseListener() {
-
+		component.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e)
 			{
@@ -404,31 +426,6 @@ public class HSwing
 					listener.accept(e);
 				}
 			}
-
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-
-			}
-
-			@Override
-			public void mouseReleased(MouseEvent e)
-			{
-
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-
-			}
-
 		});
 		return component;
 	}
