@@ -8,7 +8,7 @@ public class OutputStreamLogging extends OutputStreamDecodeBase
 {
 
 	private Logger logger;
-	private Optional<EnumLogLevel> oLogLevel;
+	private Optional<EnumLogLevel> oLogLevel = Optional.empty();
 
 	public OutputStreamLogging(Logger logger)
 	{
