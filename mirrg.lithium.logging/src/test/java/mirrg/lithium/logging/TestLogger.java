@@ -53,7 +53,7 @@ public class TestLogger
 		logger.info("004");
 		logger.debug("005");
 		logger.trace("006");
-		JScrollPane scrollPane = new JScrollPane(logger);
+		JScrollPane scrollPane = new JScrollPane(logger.getTextPane());
 		scrollPane.setPreferredSize(new Dimension(300, 200));
 		frame.add(scrollPane);
 		Thread.sleep(1000);
@@ -61,7 +61,7 @@ public class TestLogger
 		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		frame.setLocationByPlatform(true);
 		frame.setVisible(true);
-		assertTrue(logger.getText().matches(""
+		assertTrue(logger.getTextPane().getText().matches(""
 			+ ".{23} \\[FATAL] 001" + System.lineSeparator()
 			+ ".{23} \\[FATAL] 001" + System.lineSeparator()
 			+ ".{23} \\[FATAL] 001" + System.lineSeparator()

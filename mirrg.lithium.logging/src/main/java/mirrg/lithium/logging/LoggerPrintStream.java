@@ -1,8 +1,9 @@
 package mirrg.lithium.logging;
 
 import java.io.PrintStream;
+import java.util.Optional;
 
-public class LoggerPrintStream implements ILogger
+public class LoggerPrintStream extends Logger
 {
 
 	private PrintStream out;
@@ -13,9 +14,9 @@ public class LoggerPrintStream implements ILogger
 	}
 
 	@Override
-	public void println(String string, EnumLogLevel logLevel)
+	public void println(String string, Optional<EnumLogLevel> oLogLevel)
 	{
-		out.println(LoggingUtil.INSTANCE.format(string, logLevel));
+		out.println(LoggingUtil.INSTANCE.format(string, oLogLevel));
 	}
 
 }

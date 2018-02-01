@@ -3,6 +3,7 @@ package mirrg.lithium.logging;
 import java.awt.Color;
 import java.awt.Font;
 import java.util.ArrayDeque;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.swing.JTextPane;
@@ -20,12 +21,8 @@ import javax.swing.text.StyleContext;
  * 表示可能な最大行数を決めることができます。
  * 大量のログが出力される可能性がある場合は、別途ファイル出力などと併用してください。
  */
-public class LoggerTextPane extends JTextPane implements ILogger
+public class LoggerTextPane extends Logger
 {
-
-	private int maxLines;
-
-	private DefaultStyledDocument document;
 
 	public final Style STYLE_FATAL;
 	public final Style STYLE_ERROR;
@@ -34,13 +31,19 @@ public class LoggerTextPane extends JTextPane implements ILogger
 	public final Style STYLE_DEBUG;
 	public final Style STYLE_TRACE;
 
+	private int maxLines;
+
+	private JTextPane textPane;
+	private DefaultStyledDocument document;
+
 	public LoggerTextPane(int maxLines)
 	{
 		this.maxLines = maxLines;
 
-		setDocument(document = new DefaultStyledDocument());
-		setEditable(false);
-		setFont(new Font(Font.MONOSPACED, Font.PLAIN, getFont().getSize()));
+		document = new DefaultStyledDocument();
+		textPane = new JTextPane(document);
+		textPane.setEditable(false);
+		textPane.setFont(new Font(Font.MONOSPACED, Font.PLAIN, textPane.getFont().getSize()));
 
 		STYLE_FATAL = document.addStyle("fatal", document.getStyle(StyleContext.DEFAULT_STYLE));
 		StyleConstants.setForeground(STYLE_FATAL, Color.white);
@@ -57,43 +60,49 @@ public class LoggerTextPane extends JTextPane implements ILogger
 		StyleConstants.setForeground(STYLE_TRACE, Color.decode("#aaaaaa"));
 	}
 
-	/**
-	 * このメソッドはどのスレッドからでも呼び出すことができます。
-	 */
+	public JTextPane getTextPane()
+	{
+		return textPane;
+	}
+
+	//
+
 	@Override
-	public void println(String string, EnumLogLevel logLevel)
+	public void println(String string, Optional<EnumLogLevel> oLogLevel)
 	{
 		Style style = null;
-		switch (logLevel) {
-			case FATAL:
-				style = STYLE_FATAL;
-				break;
-			case ERROR:
-				style = STYLE_ERROR;
-				break;
-			case WARN:
-				style = STYLE_WARN;
-				break;
-			case INFO:
-				style = STYLE_INFO;
-				break;
-			case DEBUG:
-				style = STYLE_DEBUG;
-				break;
-			case TRACE:
-				style = STYLE_TRACE;
-				break;
+		if (oLogLevel.isPresent()) {
+			switch (oLogLevel.get()) {
+				case FATAL:
+					style = STYLE_FATAL;
+					break;
+				case ERROR:
+					style = STYLE_ERROR;
+					break;
+				case WARN:
+					style = STYLE_WARN;
+					break;
+				case INFO:
+					style = STYLE_INFO;
+					break;
+				case DEBUG:
+					style = STYLE_DEBUG;
+					break;
+				case TRACE:
+					style = STYLE_TRACE;
+					break;
+			}
 		}
 
-		println(LoggingUtil.INSTANCE.format(string, logLevel), style);
+		printlnDirectly(LoggingUtil.INSTANCE.format(string, oLogLevel), style);
 	}
 
 	/**
 	 * このメソッドはどのスレッドからでも呼び出すことができます。
 	 */
-	public void println(String string, Color foreColor)
+	public void printlnDirectly(String string, Color foreColor)
 	{
-		println(string, a -> {
+		printlnDirectly(string, a -> {
 			StyleConstants.setForeground(a, foreColor);
 		});
 	}
@@ -101,9 +110,9 @@ public class LoggerTextPane extends JTextPane implements ILogger
 	/**
 	 * このメソッドはどのスレッドからでも呼び出すことができます。
 	 */
-	public void println(String string, Color foreColor, Color backColor)
+	public void printlnDirectly(String string, Color foreColor, Color backColor)
 	{
-		println(string, a -> {
+		printlnDirectly(string, a -> {
 			StyleConstants.setForeground(a, foreColor);
 			StyleConstants.setBackground(a, backColor);
 		});
@@ -112,28 +121,28 @@ public class LoggerTextPane extends JTextPane implements ILogger
 	/**
 	 * このメソッドはどのスレッドからでも呼び出すことができます。
 	 */
-	public void println(String string, Consumer<SimpleAttributeSet> styleSetter)
+	public void printlnDirectly(String string, Consumer<SimpleAttributeSet> styleSetter)
 	{
 		SimpleAttributeSet attributeSet = new SimpleAttributeSet();
 		styleSetter.accept(attributeSet);
-		println(string, attributeSet);
+		printlnDirectly(string, attributeSet);
 	}
 
 	/**
 	 * このメソッドはどのスレッドからでも呼び出すことができます。
 	 */
-	public void println(String string)
+	public void printlnDirectly(String string)
 	{
-		println(string, (AttributeSet) null);
+		printlnDirectly(string, (AttributeSet) null);
 	}
 
 	/**
 	 * このメソッドはどのスレッドからでも呼び出すことができます。
 	 */
-	public void println(String string, AttributeSet attributeSet)
+	public void printlnDirectly(String string, AttributeSet attributeSet)
 	{
 		for (String string2 : string.split("\\r\\n|\\r|\\n")) {
-			printlnImpl(string2, attributeSet);
+			printlnDirectlyImpl(string2, attributeSet);
 		}
 	}
 
@@ -141,7 +150,7 @@ public class LoggerTextPane extends JTextPane implements ILogger
 
 	private ArrayDeque<Integer> lineLengths = new ArrayDeque<>();
 
-	private void printlnImpl(String line, AttributeSet attributeSet)
+	private void printlnDirectlyImpl(String line, AttributeSet attributeSet)
 	{
 		SwingUtilities.invokeLater(() -> {
 			try {
