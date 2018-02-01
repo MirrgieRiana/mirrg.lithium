@@ -7,6 +7,7 @@ public class LoggerPrintStream extends Logger
 {
 
 	private PrintStream out;
+	public ILogFormatter formatter = LogFormatterSimple.INSTANCE;
 
 	public LoggerPrintStream(PrintStream out)
 	{
@@ -16,7 +17,7 @@ public class LoggerPrintStream extends Logger
 	@Override
 	public void println(String string, Optional<EnumLogLevel> oLogLevel)
 	{
-		out.println(LoggingUtil.INSTANCE.format(string, oLogLevel));
+		out.println(formatter.format(string, oLogLevel));
 	}
 
 }

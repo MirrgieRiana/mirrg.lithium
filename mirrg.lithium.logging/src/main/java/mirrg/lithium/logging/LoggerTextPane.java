@@ -24,6 +24,8 @@ import javax.swing.text.StyleContext;
 public class LoggerTextPane extends Logger
 {
 
+	public ILogFormatter formatter = LogFormatterSimple.INSTANCE;
+
 	public final Style STYLE_FATAL;
 	public final Style STYLE_ERROR;
 	public final Style STYLE_WARN;
@@ -94,7 +96,7 @@ public class LoggerTextPane extends Logger
 			}
 		}
 
-		printlnDirectly(LoggingUtil.INSTANCE.format(string, oLogLevel), style);
+		printlnDirectly(formatter.format(string, oLogLevel), style);
 	}
 
 	/**
