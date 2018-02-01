@@ -148,6 +148,12 @@ public class LoggerTextPane extends Logger
 		}
 	}
 
+	public void clear()
+	{
+		lineLengths.clear();
+		textPane.setText("");
+	}
+
 	//
 
 	private ArrayDeque<Integer> lineLengths = new ArrayDeque<>();
