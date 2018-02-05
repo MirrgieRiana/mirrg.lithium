@@ -33,6 +33,7 @@ public class LoggerTextPane extends Logger
 	public final Style STYLE_DEBUG;
 	public final Style STYLE_TRACE;
 
+	private boolean isFirst = true;
 	private int maxLines;
 
 	private JTextPane textPane;
@@ -163,7 +164,12 @@ public class LoggerTextPane extends Logger
 		SwingUtilities.invokeLater(() -> {
 			try {
 				lineLengths.addLast(line.length());
-				document.insertString(document.getLength(), line + "\n", attributeSet);
+				if (isFirst) {
+					isFirst = false;
+					document.insertString(document.getLength(), line, attributeSet);
+				} else {
+					document.insertString(document.getLength(), "\n" + line, attributeSet);
+				}
 
 				while (lineLengths.size() > maxLines) {
 					int length = lineLengths.removeFirst();
