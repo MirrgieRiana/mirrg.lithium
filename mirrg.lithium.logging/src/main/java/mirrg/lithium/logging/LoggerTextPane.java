@@ -151,6 +151,7 @@ public class LoggerTextPane extends Logger
 
 	public void clear()
 	{
+		isFirst = true;
 		lineLengths.clear();
 		textPane.setText("");
 	}
