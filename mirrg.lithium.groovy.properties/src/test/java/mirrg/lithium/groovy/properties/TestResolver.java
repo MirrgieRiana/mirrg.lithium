@@ -44,12 +44,12 @@ public class TestResolver
 	public void test_ResourceResolver() throws IOException
 	{
 		ResourceResolver rr = new ResourceResolver(new PathResolverFileSystem(new File(".")));
-		rr.registerProtocol("assets", new PathResolverClass(TestResolver.class));
-		rr.registerProtocol("assets2", new PathResolverURL(new URL("http://a.com/a/b.html")));
+		rr.setPathResolver("assets", new PathResolverClass(TestResolver.class));
+		rr.setPathResolver("assets2", new PathResolverURL(new URL("http://a.com/a/b.html")));
 
-		assertEquals(new File("abc").toURI().toURL(), rr.getResourceAsURL("abc"));
-		assertEquals(TestResolver.class.getResource("header.groovy"), rr.getResourceAsURL("assets://header.groovy"));
-		assertEquals(new URL("http://a.com/a/abc.html"), rr.getResourceAsURL("assets2://abc.html"));
+		assertEquals(new File("abc").toURI().toURL(), rr.getResource("abc"));
+		assertEquals(TestResolver.class.getResource("header.groovy"), rr.getResource("assets://header.groovy"));
+		assertEquals(new URL("http://a.com/a/abc.html"), rr.getResource("assets2://abc.html"));
 	}
 
 }

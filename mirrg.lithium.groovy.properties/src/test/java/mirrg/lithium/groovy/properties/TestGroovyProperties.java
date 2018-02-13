@@ -12,12 +12,12 @@ public class TestGroovyProperties
 	{
 		TestFunction testFunction;
 
-		testFunction = TestFunctionFactory.eval(
+		testFunction = TestFunctionFactory.createTestFunction(
 			"assets://property1.groovy",
 			5);
 		assertEquals(5004, testFunction.get(4));
 
-		testFunction = TestFunctionFactory.eval(
+		testFunction = TestFunctionFactory.createTestFunction(
 			"assets://property2.groovy",
 			5);
 		assertEquals(85234, testFunction.get(4));

@@ -1,5 +1,6 @@
 package mirrg.lithium.groovy.properties;
 
+import java.io.File;
 import java.io.IOException;
 
 import groovy.lang.Binding;
@@ -7,27 +8,35 @@ import groovy.lang.Binding;
 public class TestFunctionFactory extends GroovyProperties
 {
 
-	public static TestFunction eval(String resourceName, int arg) throws Exception
+	public static final ResourceResolver RESOURCE_RESOLVER;
+	static {
+		RESOURCE_RESOLVER = new ResourceResolver(new PathResolverFileSystem(new File(".")));
+		RESOURCE_RESOLVER.setPathResolver("assets", new PathResolverClass(TestFunctionFactory.class));
+	}
+
+	public static TestFunction createTestFunction(String resourceName, int arg) throws Exception
 	{
-		return (TestFunction) new GroovyProperties() {
-			@Override
-			protected void bindVariables(Binding binding)
-			{
-				binding.setVariable("arg", arg);
-			}
+		return (TestFunction) new TestFunctionFactory(RESOURCE_RESOLVER, arg).eval(resourceName);
+	}
 
-			@Override
-			protected void registerProtocols(ResourceResolver resourceResolver)
-			{
-				resourceResolver.registerProtocol("assets", new PathResolverClass(TestFunctionFactory.class));
-			}
+	private int arg;
 
-			@Override
-			protected String convertScript(String script) throws IOException
-			{
-				return resourceResolver.getResourceAsString("assets://header.groovy") + System.lineSeparator() + script;
-			}
-		}.eval(resourceName);
+	public TestFunctionFactory(ResourceResolver resourceResolver, int arg)
+	{
+		super(resourceResolver);
+		this.arg = arg;
+	}
+
+	@Override
+	protected void bindVariables(Binding binding)
+	{
+		binding.setVariable("arg", arg);
+	}
+
+	@Override
+	protected String convertScript(String script) throws IOException
+	{
+		return URLUtil.getString(getResourceResolver().getResource("assets://header.groovy")) + System.lineSeparator() + script;
 	}
 
 }
