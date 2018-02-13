@@ -1,5 +1,6 @@
 package mirrg.lithium.groovy.properties;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
@@ -12,26 +13,17 @@ import groovy.lang.GroovyShell;
 public class GroovyProperties
 {
 
-	/**
-	 * T: この型は総称型ではいけません。
-	 */
-	@SuppressWarnings("unchecked")
-	public <T> T eval(URL scriptURL, Class<T> clazz) throws Exception
+	protected ResourceResolver resourceResolver;
+
+	public GroovyProperties()
 	{
-		Object res = eval(scriptURL);
-		if (!clazz.isInstance(res)) throw new ClassCastException("(" + clazz.getName() + ") " + res);
-		return (T) res;
+		resourceResolver = new ResourceResolver(new PathResolverFileSystem(new File(".")));
+		registerProtocols(resourceResolver);
 	}
 
-	/**
-	 * T: この型は総称型ではいけません。
-	 */
-	@SuppressWarnings("unchecked")
-	public <T> T eval(String script, URL baseURL, Class<T> clazz) throws Exception
+	public Object eval(String resourceName) throws Exception
 	{
-		Object res = eval(script, baseURL);
-		if (!clazz.isInstance(res)) throw new ClassCastException("(" + clazz.getName() + ") " + res);
-		return (T) res;
+		return eval(resourceResolver.getResourceAsURL(resourceName));
 	}
 
 	public Object eval(URL scriptURL) throws Exception
@@ -64,12 +56,12 @@ public class GroovyProperties
 		return resourceResolver;
 	}
 
-	protected void bindVariables(Binding binding) throws IOException
+	protected void bindVariables(Binding binding)
 	{
 
 	}
 
-	protected void registerProtocols(ResourceResolver resourceResolver) throws IOException
+	protected void registerProtocols(ResourceResolver resourceResolver)
 	{
 
 	}
