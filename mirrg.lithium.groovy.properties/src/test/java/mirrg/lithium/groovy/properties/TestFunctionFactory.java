@@ -14,9 +14,9 @@ public class TestFunctionFactory extends GroovyProperties
 		RESOURCE_RESOLVER.setPathResolver("assets", new PathResolverClass(TestFunctionFactory.class));
 	}
 
-	public static TestFunction createTestFunction(String resourceName, int arg) throws Exception
+	public static TestFunction createTestFunction(String resourceName, String charset, int arg) throws Exception
 	{
-		return (TestFunction) new TestFunctionFactory(RESOURCE_RESOLVER, arg).eval(resourceName);
+		return (TestFunction) new TestFunctionFactory(RESOURCE_RESOLVER, arg).eval(resourceName, charset);
 	}
 
 	private int arg;
@@ -36,7 +36,7 @@ public class TestFunctionFactory extends GroovyProperties
 	@Override
 	protected String convertScript(String script) throws IOException
 	{
-		return URLUtil.getString(getResourceResolver().getResource("assets://header.groovy")) + System.lineSeparator() + script;
+		return URLUtil.getString(getResourceResolver().getResource("assets://header.groovy"), "UTF-8") + System.lineSeparator() + script;
 	}
 
 }

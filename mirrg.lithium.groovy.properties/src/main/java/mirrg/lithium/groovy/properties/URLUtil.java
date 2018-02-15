@@ -58,9 +58,9 @@ public class URLUtil
 	/**
 	 * このリソースの内容を文字列で得ます。
 	 */
-	public static String getString(URL url) throws IOException
+	public static String getString(URL url, String charset) throws IOException
 	{
-		return new String(getBytes(url));
+		return new String(getBytes(url), charset);
 	}
 
 }

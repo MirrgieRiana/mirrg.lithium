@@ -14,11 +14,13 @@ public class TestGroovyProperties
 
 		testFunction = TestFunctionFactory.createTestFunction(
 			"assets://property1.groovy",
+			"UTF-8",
 			5);
 		assertEquals(5004, testFunction.get(4));
 
 		testFunction = TestFunctionFactory.createTestFunction(
 			"assets://property2.groovy",
+			"UTF-8",
 			5);
 		assertEquals(85234, testFunction.get(4));
 

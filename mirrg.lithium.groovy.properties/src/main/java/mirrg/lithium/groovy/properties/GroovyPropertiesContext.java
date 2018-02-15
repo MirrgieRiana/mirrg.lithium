@@ -89,17 +89,17 @@ public class GroovyPropertiesContext
 	 * @throws IOException
 	 *             参照先のリソースが存在しない場合にも発生する可能性があります。
 	 */
-	public String getResourceAsString(String resourceName) throws IOException
+	public String getResourceAsString(String resourceName, String charset) throws IOException
 	{
-		return URLUtil.getString(getResourceAsURL(resourceName));
+		return URLUtil.getString(getResourceAsURL(resourceName), charset);
 	}
 
 	/**
 	 * リソース名で表されるGroovyスクリプトを実行し、戻り値を得ます。
 	 */
-	public Object eval(String resourceName) throws Exception
+	public Object eval(String resourceName, String charset) throws Exception
 	{
-		return groovyProperties.eval(getResourceAsURL(resourceName));
+		return groovyProperties.eval(getResourceAsURL(resourceName), charset);
 	}
 
 }

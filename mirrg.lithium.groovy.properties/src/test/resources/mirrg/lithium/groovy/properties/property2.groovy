@@ -1,1 +1,1 @@
-return { func1(0, it) + context.eval("a/a.groovy") + 30 } as TestFunction
+return { func1(0, it) + context.eval("a/a.groovy", "UTF-8") + 30 } as TestFunction

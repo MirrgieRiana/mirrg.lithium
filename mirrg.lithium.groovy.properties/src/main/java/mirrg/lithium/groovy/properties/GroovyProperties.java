@@ -24,14 +24,14 @@ public class GroovyProperties
 		return resourceResolver;
 	}
 
-	public Object eval(String resourceName) throws Exception
+	public Object eval(String resourceName, String charset) throws Exception
 	{
-		return eval(resourceResolver.getResource(resourceName));
+		return eval(resourceResolver.getResource(resourceName), charset);
 	}
 
-	public Object eval(URL scriptURL) throws Exception
+	public Object eval(URL scriptURL, String charset) throws Exception
 	{
-		return eval(URLUtil.getString(scriptURL), scriptURL, scriptURL);
+		return eval(URLUtil.getString(scriptURL, charset), scriptURL, scriptURL);
 	}
 
 	public Object eval(String script, URL baseURL) throws Exception
