@@ -108,8 +108,8 @@ public abstract class HTTPResponse extends Throwable
 	public static void sendFile(HttpExchange httpExchange, InputStream in) throws IOException
 	{
 		ArrayList<Tuple<byte[], Integer>> buffers = new ArrayList<>();
-		byte[] bytes = new byte[4000];
 		while (true) {
+			byte[] bytes = new byte[4096];
 			int len = in.read(bytes);
 			if (len == -1) break;
 			buffers.add(new Tuple<>(bytes, len));
@@ -136,7 +136,7 @@ public abstract class HTTPResponse extends Throwable
 	{
 		httpExchange.sendResponseHeaders(200, length);
 		try (OutputStream out = httpExchange.getResponseBody()) {
-			byte[] bytes = new byte[4000];
+			byte[] bytes = new byte[4096];
 			while (true) {
 				int len = in.read(bytes);
 				if (len == -1) break;
