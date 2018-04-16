@@ -14,9 +14,15 @@ public class SampleLoggerTextPane
 	{
 		JFrame frame = new JFrame();
 
+		LogSinkRelay logSink = new LogSinkRelay();
+		logSink.addLogSink(new LogSinkPrintStream(System.out));
+
+		TaggedLogger logger = new TaggedLogger("Test", logSink);
+
 		frame.setLayout(new BorderLayout());
-		LoggerTextPane loggerTextPane = new LoggerTextPane(50);
-		JScrollPane scrollPane = new JScrollPane(loggerTextPane.getTextPane());
+		LogSinkTextPane logSinkTextPane = new LogSinkTextPane(50);
+		logSink.addLogSink(logSinkTextPane);
+		JScrollPane scrollPane = new JScrollPane(logSinkTextPane.getTextPane());
 		scrollPane.setPreferredSize(new Dimension(300, 200));
 		frame.add(scrollPane);
 
@@ -26,7 +32,7 @@ public class SampleLoggerTextPane
 		frame.setVisible(true);
 
 		for (int i = 0; i < 100; i++) {
-			loggerTextPane.info("" + i);
+			logger.info("" + i);
 		}
 	}
 

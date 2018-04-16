@@ -17,13 +17,14 @@ public class LogFormatterSimple implements ILogFormatter
 	}
 
 	@Override
-	public String format(String string, Optional<EnumLogLevel> oLogLevel)
+	public String format(String tag, String string, Optional<EnumLogLevel> oLogLevel)
 	{
-		return String.format("%s %-7s %s",
+		return String.format("%s %-7s [%s] %s",
 			formatter.format(LocalDateTime.now()),
 			oLogLevel
 				.map(l -> "[" + l.name() + "]")
 				.orElse(""),
+			tag,
 			string);
 	}
 

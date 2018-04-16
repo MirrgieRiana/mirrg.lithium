@@ -7,24 +7,28 @@ import java.util.Optional;
 public class OutputStreamLogging extends OutputStreamDecodeBase
 {
 
-	private Logger logger;
+	private String tag;
+	private LogSink logger;
 	private Optional<EnumLogLevel> oLogLevel = Optional.empty();
 
-	public OutputStreamLogging(Logger logger)
+	public OutputStreamLogging(String tag, LogSink logger)
 	{
 		super();
+		this.tag = tag;
 		this.logger = logger;
 	}
 
-	public OutputStreamLogging(Logger logger, String charset)
+	public OutputStreamLogging(String tag, LogSink logger, String charset)
 	{
 		super(charset);
+		this.tag = tag;
 		this.logger = logger;
 	}
 
-	public OutputStreamLogging(Logger logger, Charset charset)
+	public OutputStreamLogging(String tag, LogSink logger, Charset charset)
 	{
 		super(charset);
+		this.tag = tag;
 		this.logger = logger;
 	}
 
@@ -36,7 +40,7 @@ public class OutputStreamLogging extends OutputStreamDecodeBase
 	@Override
 	protected void println(String string) throws IOException
 	{
-		logger.println(string, oLogLevel);
+		logger.println(tag, string, oLogLevel);
 	}
 
 }

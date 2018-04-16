@@ -21,7 +21,7 @@ import javax.swing.text.StyleContext;
  * 表示可能な最大行数を決めることができます。
  * 大量のログが出力される可能性がある場合は、別途ファイル出力などと併用してください。
  */
-public class LoggerTextPane extends Logger
+public class LogSinkTextPane extends LogSink
 {
 
 	public ILogFormatter formatter = LogFormatterSimple.INSTANCE;
@@ -39,7 +39,7 @@ public class LoggerTextPane extends Logger
 	private JTextPane textPane;
 	private DefaultStyledDocument document;
 
-	public LoggerTextPane(int maxLines)
+	public LogSinkTextPane(int maxLines)
 	{
 		this.maxLines = maxLines;
 
@@ -71,7 +71,7 @@ public class LoggerTextPane extends Logger
 	//
 
 	@Override
-	public void println(String string, Optional<EnumLogLevel> oLogLevel)
+	public void println(String tag, String string, Optional<EnumLogLevel> oLogLevel)
 	{
 		Style style = null;
 		if (oLogLevel.isPresent()) {
@@ -97,7 +97,7 @@ public class LoggerTextPane extends Logger
 			}
 		}
 
-		printlnDirectly(formatter.format(string, oLogLevel), style);
+		printlnDirectly(formatter.format(tag, string, oLogLevel), style);
 	}
 
 	/**

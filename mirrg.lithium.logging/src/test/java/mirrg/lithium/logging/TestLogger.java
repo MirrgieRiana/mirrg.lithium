@@ -25,7 +25,8 @@ public class TestLogger
 	{
 		StringWriter out = new StringWriter();
 		PrintWriter out2 = new PrintWriter(out);
-		LoggerPrintWriter logger = new LoggerPrintWriter(out2);
+		LogSinkPrintWriter logSink = new LogSinkPrintWriter(out2);
+		TaggedLogger logger = new TaggedLogger("Test", logSink);
 		logger.fatal("001");
 		logger.error("002");
 		logger.warn("003");
@@ -33,12 +34,12 @@ public class TestLogger
 		logger.debug("005");
 		logger.trace("006");
 		assertTrue(out.toString().matches(""
-			+ ".{23} \\[FATAL] 001" + System.lineSeparator()
-			+ ".{23} \\[ERROR] 002" + System.lineSeparator()
-			+ ".{23} \\[WARN]  003" + System.lineSeparator()
-			+ ".{23} \\[INFO]  004" + System.lineSeparator()
-			+ ".{23} \\[DEBUG] 005" + System.lineSeparator()
-			+ ".{23} \\[TRACE] 006" + System.lineSeparator()));
+			+ ".{23} \\[FATAL] \\[Test] 001" + System.lineSeparator()
+			+ ".{23} \\[ERROR] \\[Test] 002" + System.lineSeparator()
+			+ ".{23} \\[WARN]  \\[Test] 003" + System.lineSeparator()
+			+ ".{23} \\[INFO]  \\[Test] 004" + System.lineSeparator()
+			+ ".{23} \\[DEBUG] \\[Test] 005" + System.lineSeparator()
+			+ ".{23} \\[TRACE] \\[Test] 006" + System.lineSeparator()));
 	}
 
 	@Test
@@ -46,18 +47,19 @@ public class TestLogger
 	{
 		JFrame frame = new JFrame();
 		frame.setLayout(new CardLayout());
-		LoggerTextPane logger = new LoggerTextPane(8);
-		logger.fatal("001");
-		logger.fatal("001");
-		logger.fatal("001");
-		logger.fatal("001");
-		logger.fatal("001");
-		logger.error("002");
-		logger.warn("003");
-		logger.info("004");
-		logger.debug("005");
-		logger.trace("006");
-		JScrollPane scrollPane = new JScrollPane(logger.getTextPane());
+		LogSinkTextPane logSink = new LogSinkTextPane(8);
+		Logger logger = new Logger(logSink);
+		logger.fatal("Test", "001");
+		logger.fatal("Test", "001");
+		logger.fatal("Test", "001");
+		logger.fatal("Test", "001");
+		logger.fatal("Test", "001");
+		logger.error("Test", "002");
+		logger.warn("Test", "003");
+		logger.info("Test", "004");
+		logger.debug("Test", "005");
+		logger.trace("Test", "006");
+		JScrollPane scrollPane = new JScrollPane(logSink.getTextPane());
 		scrollPane.setPreferredSize(new Dimension(300, 200));
 		frame.add(scrollPane);
 		Thread.sleep(1000);
@@ -65,15 +67,17 @@ public class TestLogger
 		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		frame.setLocationByPlatform(true);
 		frame.setVisible(true);
-		assertTrue(logger.getTextPane().getText().matches(""
-			+ ".{23} \\[FATAL] 001" + System.lineSeparator()
-			+ ".{23} \\[FATAL] 001" + System.lineSeparator()
-			+ ".{23} \\[FATAL] 001" + System.lineSeparator()
-			+ ".{23} \\[ERROR] 002" + System.lineSeparator()
-			+ ".{23} \\[WARN]  003" + System.lineSeparator()
-			+ ".{23} \\[INFO]  004" + System.lineSeparator()
-			+ ".{23} \\[DEBUG] 005" + System.lineSeparator()
-			+ ".{23} \\[TRACE] 006" + System.lineSeparator()));
+		if (!logSink.getTextPane().getText().matches(""
+			+ ".{23} \\[FATAL] \\[Test] 001" + System.lineSeparator()
+			+ ".{23} \\[FATAL] \\[Test] 001" + System.lineSeparator()
+			+ ".{23} \\[FATAL] \\[Test] 001" + System.lineSeparator()
+			+ ".{23} \\[ERROR] \\[Test] 002" + System.lineSeparator()
+			+ ".{23} \\[WARN]  \\[Test] 003" + System.lineSeparator()
+			+ ".{23} \\[INFO]  \\[Test] 004" + System.lineSeparator()
+			+ ".{23} \\[DEBUG] \\[Test] 005" + System.lineSeparator()
+			+ ".{23} \\[TRACE] \\[Test] 006")) {
+			fail();
+		}
 		Thread.sleep(1000);
 		frame.dispose();
 	}
@@ -88,33 +92,33 @@ public class TestLogger
 		test0(strings, "Unicode");
 
 		{
-			try (PrintStream out2 = new PrintStream(new OutputStreamLogging(new Logger() {
+			try (PrintStream out2 = new PrintStream(new OutputStreamLogging("Test", new LogSink() {
 				@Override
-				public void println(String string, Optional<EnumLogLevel> oLogLevel)
+				public void println(String tag, String string, Optional<EnumLogLevel> oLogLevel)
 				{
-					strings.add(string);
+					strings.add("[" + tag + "] " + string);
 				}
 			}, "Unicode"), true, "Unicode")) {
 
 				out2.println("abc");
 				assertEquals(1, strings.size());
-				assertEquals("abc", strings.get(0));
+				assertEquals("[Test] abc", strings.get(0));
 				strings.clear();
 
 				out2.println("def");
 				assertEquals(1, strings.size());
-				assertEquals("def", strings.get(0));
+				assertEquals("[Test] def", strings.get(0));
 				strings.clear();
 
 				out2.println("ghi");
 				assertEquals(1, strings.size());
-				assertEquals("ghi", strings.get(0));
+				assertEquals("[Test] ghi", strings.get(0));
 				strings.clear();
 
 			}
 
 			assertEquals(1, strings.size());
-			assertEquals("", strings.get(0));
+			assertEquals("[Test] ", strings.get(0));
 			strings.clear();
 		}
 
@@ -122,26 +126,26 @@ public class TestLogger
 
 	private void test0(ArrayList<String> strings, String charset) throws UnsupportedEncodingException
 	{
-		try (PrintStream out2 = new PrintStream(new OutputStreamLogging(new Logger() {
+		try (PrintStream out2 = new PrintStream(new OutputStreamLogging("Test", new LogSink() {
 			@Override
-			public void println(String string, Optional<EnumLogLevel> oLogLevel)
+			public void println(String tag, String string, Optional<EnumLogLevel> oLogLevel)
 			{
-				strings.add(string);
+				strings.add("[" + tag + "] " + string);
 			}
 		}, charset), true, charset)) {
 
 			out2.print("あいうえお\nかきく\rけ\r\nこ");
 			out2.flush();
 			assertEquals(3, strings.size());
-			assertEquals("あいうえお", strings.get(0));
-			assertEquals("かきく", strings.get(1));
-			assertEquals("け", strings.get(2));
+			assertEquals("[Test] あいうえお", strings.get(0));
+			assertEquals("[Test] かきく", strings.get(1));
+			assertEquals("[Test] け", strings.get(2));
 			strings.clear();
 
 		}
 
 		assertEquals(1, strings.size());
-		assertEquals("こ", strings.get(0));
+		assertEquals("[Test] こ", strings.get(0));
 		strings.clear();
 	}
 

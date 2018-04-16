@@ -1,99 +1,105 @@
 package mirrg.lithium.logging;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Optional;
 
-public abstract class Logger
+public class Logger
 {
 
-	public abstract void println(String string, Optional<EnumLogLevel> oLogLevel);
+	private LogSink logSink;
 
-	public final void println(String string)
+	public Logger(LogSink logSink)
 	{
-		println(string, Optional.empty());
+		this.logSink = logSink;
 	}
 
-	public final void println(String string, EnumLogLevel logLevel)
+	public void println(String tag, String string, Optional<EnumLogLevel> oLogLevel)
 	{
-		println(string, Optional.of(logLevel));
+		logSink.println(tag, string, oLogLevel);
 	}
 
-	public final void fatal(String string)
+	public void println(String tag, String string)
 	{
-		println(string, EnumLogLevel.FATAL);
+		println(tag, string, Optional.empty());
 	}
 
-	public final void error(String string)
+	public void println(String tag, String string, EnumLogLevel logLevel)
 	{
-		println(string, EnumLogLevel.ERROR);
+		println(tag, string, Optional.of(logLevel));
 	}
 
-	public final void warn(String string)
+	public void fatal(String tag, String string)
 	{
-		println(string, EnumLogLevel.WARN);
+		println(tag, string, EnumLogLevel.FATAL);
 	}
 
-	public final void info(String string)
+	public void error(String tag, String string)
 	{
-		println(string, EnumLogLevel.INFO);
+		println(tag, string, EnumLogLevel.ERROR);
 	}
 
-	public final void debug(String string)
+	public void warn(String tag, String string)
 	{
-		println(string, EnumLogLevel.DEBUG);
+		println(tag, string, EnumLogLevel.WARN);
 	}
 
-	public final void trace(String string)
+	public void info(String tag, String string)
 	{
-		println(string, EnumLogLevel.TRACE);
+		println(tag, string, EnumLogLevel.INFO);
 	}
 
-	public void println(Throwable e, Optional<EnumLogLevel> oLogLevel)
+	public void debug(String tag, String string)
 	{
-		StringWriter out = new StringWriter();
-		e.printStackTrace(new PrintWriter(out));
-		println(out.toString(), oLogLevel);
+		println(tag, string, EnumLogLevel.DEBUG);
 	}
 
-	public final void println(Throwable e)
+	public void trace(String tag, String string)
 	{
-		println(e, Optional.empty());
+		println(tag, string, EnumLogLevel.TRACE);
 	}
 
-	public final void println(Throwable e, EnumLogLevel logLevel)
+	public void println(String tag, Throwable e, Optional<EnumLogLevel> oLogLevel)
 	{
-		println(e, Optional.of(logLevel));
+		logSink.println(tag, e, oLogLevel);
 	}
 
-	public final void fatal(Throwable e)
+	public void println(String tag, Throwable e)
 	{
-		println(e, EnumLogLevel.FATAL);
+		println(tag, e, Optional.empty());
 	}
 
-	public final void error(Throwable e)
+	public void println(String tag, Throwable e, EnumLogLevel logLevel)
 	{
-		println(e, EnumLogLevel.ERROR);
+		println(tag, e, Optional.of(logLevel));
 	}
 
-	public final void warn(Throwable e)
+	public void fatal(String tag, Throwable e)
 	{
-		println(e, EnumLogLevel.WARN);
+		println(tag, e, EnumLogLevel.FATAL);
 	}
 
-	public final void info(Throwable e)
+	public void error(String tag, Throwable e)
 	{
-		println(e, EnumLogLevel.INFO);
+		println(tag, e, EnumLogLevel.ERROR);
 	}
 
-	public final void debug(Throwable e)
+	public void warn(String tag, Throwable e)
 	{
-		println(e, EnumLogLevel.DEBUG);
+		println(tag, e, EnumLogLevel.WARN);
 	}
 
-	public final void trace(Throwable e)
+	public void info(String tag, Throwable e)
 	{
-		println(e, EnumLogLevel.TRACE);
+		println(tag, e, EnumLogLevel.INFO);
+	}
+
+	public void debug(String tag, Throwable e)
+	{
+		println(tag, e, EnumLogLevel.DEBUG);
+	}
+
+	public void trace(String tag, Throwable e)
+	{
+		println(tag, e, EnumLogLevel.TRACE);
 	}
 
 }
