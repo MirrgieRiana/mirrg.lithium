@@ -14,7 +14,7 @@ public class TaggedLogger
 		this.logSink = logSink;
 	}
 
-	public void println(String string, Optional<EnumLogLevel> oLogLevel)
+	public synchronized void println(String string, Optional<EnumLogLevel> oLogLevel)
 	{
 		logSink.println(tag, string, oLogLevel);
 	}
@@ -59,7 +59,7 @@ public class TaggedLogger
 		println(string, EnumLogLevel.TRACE);
 	}
 
-	public void println(Throwable e, Optional<EnumLogLevel> oLogLevel)
+	public synchronized void println(Throwable e, Optional<EnumLogLevel> oLogLevel)
 	{
 		logSink.println(tag, e, oLogLevel);
 	}

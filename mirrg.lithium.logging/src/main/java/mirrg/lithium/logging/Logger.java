@@ -12,7 +12,7 @@ public class Logger
 		this.logSink = logSink;
 	}
 
-	public void println(String tag, String string, Optional<EnumLogLevel> oLogLevel)
+	public synchronized void println(String tag, String string, Optional<EnumLogLevel> oLogLevel)
 	{
 		logSink.println(tag, string, oLogLevel);
 	}
@@ -57,7 +57,7 @@ public class Logger
 		println(tag, string, EnumLogLevel.TRACE);
 	}
 
-	public void println(String tag, Throwable e, Optional<EnumLogLevel> oLogLevel)
+	public synchronized void println(String tag, Throwable e, Optional<EnumLogLevel> oLogLevel)
 	{
 		logSink.println(tag, e, oLogLevel);
 	}
