@@ -2,6 +2,7 @@ package mirrg.lithium.logging;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -162,24 +163,30 @@ public class LogSinkTextPane extends LogSink
 
 	private void printlnDirectlyImpl(String line, AttributeSet attributeSet)
 	{
-		SwingUtilities.invokeLater(() -> {
-			try {
-				lineLengths.addLast(line.length());
-				if (isFirst) {
-					isFirst = false;
-					document.insertString(document.getLength(), line, attributeSet);
-				} else {
-					document.insertString(document.getLength(), "\n" + line, attributeSet);
-				}
+		try {
+			SwingUtilities.invokeAndWait(() -> {
+				try {
+					lineLengths.addLast(line.length());
+					if (isFirst) {
+						isFirst = false;
+						document.insertString(document.getLength(), line, attributeSet);
+					} else {
+						document.insertString(document.getLength(), "\n" + line, attributeSet);
+					}
 
-				while (lineLengths.size() > maxLines) {
-					int length = lineLengths.removeFirst();
-					document.remove(0, length + 1);
+					while (lineLengths.size() > maxLines) {
+						int length = lineLengths.removeFirst();
+						document.remove(0, length + 1);
+					}
+				} catch (BadLocationException e) {
+					throw new RuntimeException(e);
 				}
-			} catch (BadLocationException e) {
-				e.printStackTrace();
-			}
-		});
+			});
+		} catch (InvocationTargetException e) {
+			throw new RuntimeException(e);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }
