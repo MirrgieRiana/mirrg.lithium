@@ -146,7 +146,19 @@ public class LogSinkTextPane extends LogSink
 	public void printlnDirectly(String string, AttributeSet attributeSet)
 	{
 		for (String string2 : string.split("\\r\\n|\\r|\\n")) {
-			printlnDirectlyImpl(string2, attributeSet);
+			if (SwingUtilities.isEventDispatchThread()) {
+				printlnDirectlyImpl(string2, attributeSet);
+			} else {
+				try {
+					SwingUtilities.invokeAndWait(() -> {
+						printlnDirectlyImpl(string2, attributeSet);
+					});
+				} catch (InvocationTargetException e) {
+					throw new RuntimeException(e);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}
 		}
 	}
 
@@ -164,27 +176,19 @@ public class LogSinkTextPane extends LogSink
 	private void printlnDirectlyImpl(String line, AttributeSet attributeSet)
 	{
 		try {
-			SwingUtilities.invokeAndWait(() -> {
-				try {
-					lineLengths.addLast(line.length());
-					if (isFirst) {
-						isFirst = false;
-						document.insertString(document.getLength(), line, attributeSet);
-					} else {
-						document.insertString(document.getLength(), "\n" + line, attributeSet);
-					}
+			lineLengths.addLast(line.length());
+			if (isFirst) {
+				isFirst = false;
+				document.insertString(document.getLength(), line, attributeSet);
+			} else {
+				document.insertString(document.getLength(), "\n" + line, attributeSet);
+			}
 
-					while (lineLengths.size() > maxLines) {
-						int length = lineLengths.removeFirst();
-						document.remove(0, length + 1);
-					}
-				} catch (BadLocationException e) {
-					throw new RuntimeException(e);
-				}
-			});
-		} catch (InvocationTargetException e) {
-			throw new RuntimeException(e);
-		} catch (InterruptedException e) {
+			while (lineLengths.size() > maxLines) {
+				int length = lineLengths.removeFirst();
+				document.remove(0, length + 1);
+			}
+		} catch (BadLocationException e) {
 			throw new RuntimeException(e);
 		}
 	}
