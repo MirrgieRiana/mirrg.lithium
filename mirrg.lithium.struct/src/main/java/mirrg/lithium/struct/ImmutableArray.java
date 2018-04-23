@@ -1,11 +1,14 @@
 package mirrg.lithium.struct;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class ImmutableArray<T>
@@ -32,6 +35,45 @@ public final class ImmutableArray<T>
 		for (int i = 0; i < array.size(); i++) {
 			this.array[i] = array.get(i);
 		}
+	}
+
+	public ImmutableArray(Stream<T> stream)
+	{
+		this(toList(stream));
+	}
+
+	public ImmutableArray(Iterable<T> iterable)
+	{
+		this(toList(iterable));
+	}
+
+	public ImmutableArray(Enumeration<T> enumeration)
+	{
+		this(toList(enumeration));
+	}
+
+	private static <T> ArrayList<T> toList(Stream<T> stream)
+	{
+		return stream.collect(Collectors.toCollection(ArrayList::new));
+	}
+
+	private static <T> ArrayList<T> toList(Iterable<T> iterable)
+	{
+		ArrayList<T> array = new ArrayList<>();
+		Iterator<T> iterator = iterable.iterator();
+		while (iterator.hasNext()) {
+			array.add(iterator.next());
+		}
+		return array;
+	}
+
+	private static <T> ArrayList<T> toList(Enumeration<T> enumeration)
+	{
+		ArrayList<T> array = new ArrayList<>();
+		while (enumeration.hasMoreElements()) {
+			array.add(enumeration.nextElement());
+		}
+		return array;
 	}
 
 	public int length()
